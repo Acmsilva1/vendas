@@ -2,53 +2,46 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard Real-Time Vendas</title>
+    <title>Dashboard Real-Time</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #f4f4f4; }
-        .card { background: white; padding: 20px; border-radius: 10px; display: inline-block; margin: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 200px; }
-        h1 { color: #333; }
-        .valor { font-size: 24px; font-weight: bold; color: #2ecc71; }
+        body { font-family: sans-serif; background: #121212; color: white; text-align: center; padding-top: 50px; }
+        .grid { display: flex; justify-content: center; gap: 20px; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 10px; min-width: 200px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .valor { font-size: 28px; font-weight: bold; margin-top: 10px; }
+        #vendas-dia { color: #2ecc71; }
+        #gastos-dia { color: #e74c3c; }
     </style>
 </head>
 <body>
     <h1>Monitoramento de Vendas (Real-Time)</h1>
     <p>Última atualização: <span id="update-time">--:--:--</span></p>
 
-    <div class="card">
-        <h3>Vendas Hoje</h3>
-        <p class="valor" id="vendas-dia">R$ 0,00</p>
-    </div>
-
-    <div class="card">
-        <h3>Gastos Hoje</h3>
-        <p class="valor" id="gastos-dia" style="color: #e74c3c;">R$ 0,00</p>
+    <div class="grid">
+        <div class="card">
+            <h3>Vendas Hoje</h3>
+            <div class="valor" id="vendas-dia">R$ 0,00</div>
+        </div>
+        <div class="card">
+            <h3>Gastos Hoje</h3>
+            <div class="valor" id="gastos-dia">R$ 0,00</div>
+        </div>
     </div>
 
     <script>
-        async function buscarDados() {
+        async function atualizar() {
             try {
-                const response = await fetch('/api/status');
-                const data = await response.json();
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                if(data.erro) return console.error(data.erro);
 
-                if(data.erro) {
-                    console.error("Erro na API:", data.erro);
-                    return;
-                }
-
-                // Atualizando os elementos HTML dinamicamente
-                document.getElementById('vendas-dia').innerText = "R$ " + data.vendas_dia.toLocaleString('pt-BR');
-                document.getElementById('gastos-dia').innerText = "R$ " + data.gastos_dia.toLocaleString('pt-BR');
+                const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                document.getElementById('vendas-dia').innerText = fmt(data.vendas_dia);
+                document.getElementById('gastos-dia').innerText = fmt(data.gastos_dia);
                 document.getElementById('update-time').innerText = data.ultima_atualizacao;
-
-            } catch (err) {
-                console.error("Falha ao buscar dados", err);
-            }
+            } catch (e) { console.error(e); }
         }
-
-        // Atualiza a cada 30 segundos
-        setInterval(buscarDados, 30000);
-        // Chama a primeira vez ao carregar
-        buscarDados();
+        setInterval(atualizar, 30000); // 30 segundos
+        atualizar();
     </script>
 </body>
 </html>
