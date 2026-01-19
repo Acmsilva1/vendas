@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+gspread
+pandas
+jinja2
+pytz
