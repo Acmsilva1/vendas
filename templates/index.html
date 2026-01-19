@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Real-Time Vendas</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f4f4f4; }
+        .card { background: white; padding: 20px; border-radius: 10px; display: inline-block; margin: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 200px; }
+        h1 { color: #333; }
+        .valor { font-size: 24px; font-weight: bold; color: #2ecc71; }
+    </style>
+</head>
+<body>
+    <h1>Monitoramento de Vendas (Real-Time)</h1>
+    <p>Última atualização: <span id="update-time">--:--:--</span></p>
+
+    <div class="card">
+        <h3>Vendas Hoje</h3>
+        <p class="valor" id="vendas-dia">R$ 0,00</p>
+    </div>
+
+    <div class="card">
+        <h3>Gastos Hoje</h3>
+        <p class="valor" id="gastos-dia" style="color: #e74c3c;">R$ 0,00</p>
+    </div>
+
+    <script>
+        async function buscarDados() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+
+                if(data.erro) {
+                    console.error("Erro na API:", data.erro);
+                    return;
+                }
+
+                // Atualizando os elementos HTML dinamicamente
+                document.getElementById('vendas-dia').innerText = "R$ " + data.vendas_dia.toLocaleString('pt-BR');
+                document.getElementById('gastos-dia').innerText = "R$ " + data.gastos_dia.toLocaleString('pt-BR');
+                document.getElementById('update-time').innerText = data.ultima_atualizacao;
+
+            } catch (err) {
+                console.error("Falha ao buscar dados", err);
+            }
+        }
+
+        // Atualiza a cada 30 segundos
+        setInterval(buscarDados, 30000);
+        // Chama a primeira vez ao carregar
+        buscarDados();
+    </script>
+</body>
+</html>
