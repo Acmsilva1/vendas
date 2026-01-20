@@ -2,47 +2,55 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard Executivo | André TI</title>
+    <title>Business Intel | André TI</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a; color: #eee; margin: 0; padding: 20px; }
-        .grid-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .card { background: #111; border-top: 4px solid #3498db; padding: 20px; border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        .card.hoje { border-top-color: #f1c40f; }
-        .card.lucro { border-top-color: #2ecc71; background: #061a0e; }
-        .card h3 { font-size: 0.75rem; color: #888; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
-        .valor { font-size: 2rem; font-weight: bold; margin-top: 10px; color: #fff; }
+        :root { --bg: #0a0a0a; --card: #111; --border: #333; --accent: #3498db; --green: #2ecc71; --red: #e74c3c; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #eee; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
+        .grid-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .card { background: var(--card); border-top: 4px solid var(--accent); padding: 15px; border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .card h3 { font-size: 0.7rem; color: #888; margin: 0; text-transform: uppercase; }
+        .valor { font-size: 1.8rem; font-weight: bold; margin-top: 8px; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #111; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #222; font-size: 0.9rem; }
-        th { color: #3498db; text-transform: uppercase; font-size: 0.8rem; }
+        .tables-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        table { width: 100%; border-collapse: collapse; background: var(--card); font-size: 0.85rem; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { color: var(--accent); text-transform: uppercase; font-size: 0.75rem; }
         tr:hover { background: #181818; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .outlier { color: var(--red); font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h2 style="margin:0; color:#3498db;">SYSTEM DASHBOARD V2.0</h2>
-        <p style="font-size:0.8rem;">ULTRA REFRESH: <span id="time" style="color:#f1c40f;">--:--:--</span></p>
+        <h2 style="margin:0;">SYSTEM MANAGEMENT <span style="color:var(--accent)">V2.1</span></h2>
+        <p>RECARGA EM: <span id="time" style="color:#f1c40f;">--:--:--</span></p>
     </div>
 
     <div class="grid-main">
-        <div class="card hoje"><h3>Vendas Hoje</h3><div class="valor" id="v_hoje">R$ 0,00</div></div>
-        <div class="card hoje" style="border-top-color: #e74c3c;"><h3>Gastos Hoje</h3><div class="valor" id="g_hoje">R$ 0,00</div></div>
-        <div class="card"><h3>Vendas do Mês</h3><div class="valor" id="v_mes">R$ 0,00</div></div>
-        <div class="card" style="border-top-color: #e67e22;"><h3>Gastos do Mês</h3><div class="valor" id="g_mes">R$ 0,00</div></div>
-        <div class="card lucro"><h3>Lucro Líquido</h3><div class="valor" id="lucro" style="color:#2ecc71">R$ 0,00</div></div>
+        <div class="card" style="border-top-color: var(--accent);"><h3>Vendas Hoje</h3><div class="valor" id="v_hoje">R$ 0,00</div></div>
+        <div class="card" style="border-top-color: var(--red);"><h3>Gastos Hoje</h3><div class="valor" id="g_hoje">R$ 0,00</div></div>
+        <div class="card" style="border-top-color: var(--accent);"><h3>Vendas Mês</h3><div class="valor" id="v_mes">R$ 0,00</div></div>
+        <div class="card" style="border-top-color: #e67e22;"><h3>Gastos Mês</h3><div class="valor" id="g_mes">R$ 0,00</div></div>
+        <div class="card" style="border-top-color: var(--green); background: #061a0e;"><h3>Lucro Líquido</h3><div class="valor" id="lucro" style="color:var(--green)">R$ 0,00</div></div>
     </div>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div class="tables-container">
         <div>
-            <h3>📊 RANKING DE PRODUTOS</h3>
+            <h3>📊 RANKING PRODUTOS (MÊS)</h3>
             <table id="tab-sabores">
                 <thead><tr><th>Sabor</th><th>Qtd</th><th>Total</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
         <div>
-            <h3>🕒 ÚLTIMAS TRANSAÇÕES</h3>
+            <h3>💸 RANKING DESPESAS (OUTLIERS)</h3>
+            <table id="tab-despesas">
+                <thead><tr><th>Descrição</th><th>Total</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div>
+            <h3>🕒 ÚLTIMOS LANÇAMENTOS</h3>
             <table id="tab-vendas">
                 <thead><tr><th>Data/Hora</th><th>Sabor</th><th>Valor</th></tr></thead>
                 <tbody></tbody>
@@ -52,24 +60,30 @@
 
     <script>
         async function update() {
-            const res = await fetch('/api/status');
-            const d = await res.json();
-            const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            try {
+                const res = await fetch('/api/status');
+                const d = await res.json();
+                const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-            document.getElementById('v_hoje').innerText = fmt(d.vendas_hoje);
-            document.getElementById('g_hoje').innerText = fmt(d.gastos_hoje);
-            document.getElementById('v_mes').innerText = fmt(d.vendas_mes);
-            document.getElementById('g_mes').innerText = fmt(d.gastos_mes);
-            document.getElementById('lucro').innerText = fmt(d.lucro_mes);
-            document.getElementById('time').innerText = d.ultima_atualizacao;
+                document.getElementById('v_hoje').innerText = fmt(d.vendas_hoje);
+                document.getElementById('g_hoje').innerText = fmt(d.gastos_hoje);
+                document.getElementById('v_mes').innerText = fmt(d.vendas_mes);
+                document.getElementById('g_mes').innerText = fmt(d.gastos_mes);
+                document.getElementById('lucro').innerText = fmt(d.lucro_mes);
+                document.getElementById('time').innerText = d.ultima_atualizacao;
 
-            document.querySelector('#tab-sabores tbody').innerHTML = d.ranking_sabores.map(s => `
-                <tr><td>${s.SABORES}</td><td>${s.quantidade}</td><td>${fmt(s.vendas)}</td></tr>
-            `).join('');
+                document.querySelector('#tab-sabores tbody').innerHTML = d.ranking_sabores.map(s => `
+                    <tr><td>${s.SABORES}</td><td>${s.quantidade}</td><td>${fmt(s.vendas)}</td></tr>
+                `).join('');
 
-            document.querySelector('#tab-vendas tbody').innerHTML = d.ultimas_vendas.map(v => `
-                <tr><td>${v['DATA E HORA']}</td><td>${v.SABORES}</td><td>${fmt(v['VALOR DA VENDA'])}</td></tr>
-            `).join('');
+                document.querySelector('#tab-despesas tbody').innerHTML = d.ranking_despesas.map(g => `
+                    <tr class="${g.total > 150 ? 'outlier' : ''}"><td>${g.DESCRIÇÃO}</td><td>${fmt(g.total)}</td></tr>
+                `).join('');
+
+                document.querySelector('#tab-vendas tbody').innerHTML = d.ultimas_vendas.map(v => `
+                    <tr><td>${v['DATA E HORA']}</td><td>${v.SABORES}</td><td>${fmt(v['VALOR DA VENDA'])}</td></tr>
+                `).join('');
+            } catch (e) { console.error("Erro na atualização:", e); }
         }
         setInterval(update, 30000); update();
     </script>
