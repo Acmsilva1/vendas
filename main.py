@@ -29,53 +29,53 @@ def processar_dados():
     df_vendas = pd.DataFrame(sh.worksheet("vendas").get_all_records())
     df_gastos = pd.DataFrame(sh.worksheet("gastos").get_all_records())
 
-    # Limpeza e Datas
     df_vendas = limpar_valor(df_vendas, 'VALOR DA VENDA')
     df_gastos = limpar_valor(df_gastos, 'VALOR')
     
     tz = pytz.timezone('America/Sao_Paulo')
     hoje = datetime.now(tz).date()
     inicio_mes = hoje.replace(day=1)
-    ultimo_dia_mes_ant = inicio_mes - timedelta(days=1)
-    inicio_mes_ant = ultimo_dia_mes_ant.replace(day=1)
 
     for df in [df_vendas, df_gastos]:
         df['DATA_DT'] = pd.to_datetime(df['DATA E HORA'], dayfirst=True, errors='coerce').dt.date
 
-    # --- MÉTRICAS DE VENDAS ---
+    # --- KPI VENDAS ---
     vendas_mes = df_vendas[df_vendas['DATA_DT'] >= inicio_mes]
     vendas_hoje = df_vendas[df_vendas['DATA_DT'] == hoje]
-    vendas_mes_ant = df_vendas[(df_vendas['DATA_DT'] >= inicio_mes_ant) & (df_vendas['DATA_DT'] <= ultimo_dia_mes_ant)]
-    
     total_mes = vendas_mes['VALOR DA VENDA'].sum()
     total_hoje = vendas_hoje['VALOR DA VENDA'].sum()
-    total_mes_ant = vendas_mes_ant['VALOR DA VENDA'].sum()
-    
-    # Delta (Comparativo com mês anterior)
-    delta_vendas = ((total_mes - total_mes_ant) / total_mes_ant * 100) if total_mes_ant > 0 else 0
+    ticket_medio = total_mes / len(vendas_mes) if len(vendas_mes) > 0 else 0
 
-    # --- MÉTRICAS DE GASTOS ---
+    # --- KPI GASTOS & ALERTAS ---
     gastos_mes = df_gastos[df_gastos['DATA_DT'] >= inicio_mes]
-    total_gastos_mes = gastos_mes['VALOR'].sum()
-    lucro_mes = total_mes - total_gastos_mes
-
-    # --- SABORES E PRODUTIVIDADE ---
-    top_sabores = vendas_mes['SABORES'].value_counts().head(5).to_dict()
+    total_gastos = gastos_mes['VALOR'].sum()
     
-    # Produtividade por dia da semana (Igual ao seu Streamlit)
-    df_vendas['dia_semana'] = pd.to_datetime(df_vendas['DATA E HORA'], dayfirst=True).dt.day_name()
-    prod_dia = df_vendas[df_vendas['DATA_DT'] >= inicio_mes]['dia_semana'].value_counts().to_dict()
+    # Identifica o item de maior gasto (Igual ao seu Streamlit)
+    item_alerta = "Nenhum"
+    valor_alerta = 0
+    if not gastos_mes.empty:
+        maior_gasto = gastos_mes.groupby('PRODUTO')['VALOR'].sum().idxmax()
+        valor_alerta = gastos_mes.groupby('PRODUTO')['VALOR'].sum().max()
+        item_alerta = maior_gasto
+
+    # --- GRÁFICOS ---
+    top_sabores = vendas_mes['SABORES'].value_counts().head(5).to_dict()
 
     return {
         "vendas_hoje": float(total_hoje),
         "vendas_mes": float(total_mes),
-        "delta_vendas_mes": round(delta_vendas, 2),
-        "gastos_mes": float(total_gastos_mes),
-        "lucro_mes": float(lucro_mes),
+        "ticket_medio": float(ticket_medio),
+        "gastos_mes": float(total_gastos),
+        "lucro_mes": float(total_mes - total_gastos),
+        "item_alerta": item_alerta,
+        "valor_alerta": float(valor_alerta),
         "top_sabores": top_sabores,
-        "produtividade_dia": prod_dia,
         "ultima_atualizacao": datetime.now(tz).strftime("%H:%M:%S")
     }
+
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/api/status")
 async def api_status():
