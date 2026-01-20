@@ -2,45 +2,53 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Business Intel | André TI</title>
+    <title>Dashboard Executivo | André TI</title>
     <style>
-        body { font-family: 'Consolas', monospace; background: #0a0a0a; color: #00ff41; margin: 0; padding: 20px; }
-        .grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 20px; }
-        .card { border: 1px solid #00ff41; padding: 15px; background: #000; }
-        .card h3 { font-size: 0.8rem; margin: 0; color: #fff; text-transform: uppercase; }
-        .valor { font-size: 1.5rem; margin-top: 10px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a; color: #eee; margin: 0; padding: 20px; }
+        .grid-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .card { background: #111; border-top: 4px solid #3498db; padding: 20px; border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .card.hoje { border-top-color: #f1c40f; }
+        .card.lucro { border-top-color: #2ecc71; background: #061a0e; }
+        .card h3 { font-size: 0.75rem; color: #888; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+        .valor { font-size: 2rem; font-weight: bold; margin-top: 10px; color: #fff; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #000; border: 1px solid #333; }
-        th, td { border: 1px solid #333; padding: 12px; text-align: left; font-size: 0.9rem; }
-        th { background: #111; color: #fff; text-transform: uppercase; }
-        tr:hover { background: #111; }
-        .status-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #00ff41; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #111; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #222; font-size: 0.9rem; }
+        th { color: #3498db; text-transform: uppercase; font-size: 0.8rem; }
+        tr:hover { background: #181818; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
     </style>
 </head>
 <body>
-    <div class="status-header">
-        <h1>[SISTEMA DE GESTÃO ANALÍTICA]</h1>
-        <p>REFRESH: <span id="time">--:--:--</span></p>
+    <div class="header">
+        <h2 style="margin:0; color:#3498db;">SYSTEM DASHBOARD V2.0</h2>
+        <p style="font-size:0.8rem;">ULTRA REFRESH: <span id="time" style="color:#f1c40f;">--:--:--</span></p>
     </div>
 
-    <div class="grid-kpi">
-        <div class="card"><h3>Vendas Hoje</h3><div class="valor" id="v_hoje">R$ 0,00</div></div>
-        <div class="card"><h3>Ticket Médio (Mês)</h3><div class="valor" id="t_medio">R$ 0,00</div></div>
-        <div class="card"><h3>Projeção Fim do Mês</h3><div class="valor" id="proj">R$ 0,00</div></div>
-        <div class="card" style="border-color: #fff"><h3>Lucro Líquido</h3><div class="valor" id="lucro">R$ 0,00</div></div>
+    <div class="grid-main">
+        <div class="card hoje"><h3>Vendas Hoje</h3><div class="valor" id="v_hoje">R$ 0,00</div></div>
+        <div class="card hoje" style="border-top-color: #e74c3c;"><h3>Gastos Hoje</h3><div class="valor" id="g_hoje">R$ 0,00</div></div>
+        <div class="card"><h3>Vendas do Mês</h3><div class="valor" id="v_mes">R$ 0,00</div></div>
+        <div class="card" style="border-top-color: #e67e22;"><h3>Gastos do Mês</h3><div class="valor" id="g_mes">R$ 0,00</div></div>
+        <div class="card lucro"><h3>Lucro Líquido</h3><div class="valor" id="lucro" style="color:#2ecc71">R$ 0,00</div></div>
     </div>
 
-    <h3>📊 RANKING DE PRODUTOS (MÊS ATUAL)</h3>
-    <table id="tab-sabores">
-        <thead><tr><th>Sabor</th><th>Volume (Qtd)</th><th>Total (R$)</th></tr></thead>
-        <tbody></tbody>
-    </table>
-
-    <h3>🕒 LOG DE ÚLTIMAS TRANSAÇÕES</h3>
-    <table id="tab-vendas">
-        <thead><tr><th>Data/Hora</th><th>Sabor</th><th>Valor</th></tr></thead>
-        <tbody></tbody>
-    </table>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div>
+            <h3>📊 RANKING DE PRODUTOS</h3>
+            <table id="tab-sabores">
+                <thead><tr><th>Sabor</th><th>Qtd</th><th>Total</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div>
+            <h3>🕒 ÚLTIMAS TRANSAÇÕES</h3>
+            <table id="tab-vendas">
+                <thead><tr><th>Data/Hora</th><th>Sabor</th><th>Valor</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
 
     <script>
         async function update() {
@@ -49,20 +57,17 @@
             const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
             document.getElementById('v_hoje').innerText = fmt(d.vendas_hoje);
-            document.getElementById('t_medio').innerText = fmt(d.ticket_medio);
-            document.getElementById('proj').innerText = fmt(d.projecao_mes);
+            document.getElementById('g_hoje').innerText = fmt(d.gastos_hoje);
+            document.getElementById('v_mes').innerText = fmt(d.vendas_mes);
+            document.getElementById('g_mes').innerText = fmt(d.gastos_mes);
             document.getElementById('lucro').innerText = fmt(d.lucro_mes);
             document.getElementById('time').innerText = d.ultima_atualizacao;
 
-            // Tabela Ranking
-            const tbodyS = document.querySelector('#tab-sabores tbody');
-            tbodyS.innerHTML = d.ranking_sabores.map(s => `
+            document.querySelector('#tab-sabores tbody').innerHTML = d.ranking_sabores.map(s => `
                 <tr><td>${s.SABORES}</td><td>${s.quantidade}</td><td>${fmt(s.vendas)}</td></tr>
             `).join('');
 
-            // Tabela Log
-            const tbodyV = document.querySelector('#tab-vendas tbody');
-            tbodyV.innerHTML = d.ultimas_vendas.map(v => `
+            document.querySelector('#tab-vendas tbody').innerHTML = d.ultimas_vendas.map(v => `
                 <tr><td>${v['DATA E HORA']}</td><td>${v.SABORES}</td><td>${fmt(v['VALOR DA VENDA'])}</td></tr>
             `).join('');
         }
