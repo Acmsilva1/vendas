@@ -2,77 +2,69 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Sua Empresa | Dashboard Real-Time</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Business Intel | André TI</title>
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --accent: #38bdf8; --text: #f8fafc; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        .alerta-container { background: #7f1d1d; border: 1px solid #ef4444; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; }
-        .card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
-        .card h3 { font-size: 0.75rem; color: #94a3b8; margin: 0; text-transform: uppercase; }
-        .valor { font-size: 1.6rem; font-weight: bold; margin-top: 10px; color: var(--accent); }
-        .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
-        canvas { max-height: 300px; }
+        body { font-family: 'Consolas', monospace; background: #0a0a0a; color: #00ff41; margin: 0; padding: 20px; }
+        .grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .card { border: 1px solid #00ff41; padding: 15px; background: #000; }
+        .card h3 { font-size: 0.8rem; margin: 0; color: #fff; text-transform: uppercase; }
+        .valor { font-size: 1.5rem; margin-top: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #000; border: 1px solid #333; }
+        th, td { border: 1px solid #333; padding: 12px; text-align: left; font-size: 0.9rem; }
+        th { background: #111; color: #fff; text-transform: uppercase; }
+        tr:hover { background: #111; }
+        .status-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #00ff41; padding-bottom: 10px; }
     </style>
 </head>
 <body>
-    <div id="alerta" class="alerta-container">
-        ⚠️ <b>Alerta de Gasto:</b> <span id="item-alerta"></span> (<span id="valor-alerta"></span>). Revise este custo!
+    <div class="status-header">
+        <h1>[SISTEMA DE GESTÃO ANALÍTICA]</h1>
+        <p>REFRESH: <span id="time">--:--:--</span></p>
     </div>
 
-    <div style="display:flex; justify-content: space-between; align-items: center;">
-        <h1>📊 Gestão de Vendas</h1>
-        <p>🕒 <span id="time">--:--:--</span></p>
-    </div>
-
-    <div class="grid">
+    <div class="grid-kpi">
         <div class="card"><h3>Vendas Hoje</h3><div class="valor" id="v_hoje">R$ 0,00</div></div>
-        <div class="card"><h3>Faturamento Mês</h3><div class="valor" id="v_mes">R$ 0,00</div></div>
-        <div class="card"><h3>Ticket Médio</h3><div class="valor" id="t_medio">R$ 0,00</div></div>
-        <div class="card" style="border-bottom: 4px solid #2ecc71"><h3>Lucro Estimado</h3><div class="valor" id="lucro" style="color:#2ecc71">R$ 0,00</div></div>
+        <div class="card"><h3>Ticket Médio (Mês)</h3><div class="valor" id="t_medio">R$ 0,00</div></div>
+        <div class="card"><h3>Projeção Fim do Mês</h3><div class="valor" id="proj">R$ 0,00</div></div>
+        <div class="card" style="border-color: #fff"><h3>Lucro Líquido</h3><div class="valor" id="lucro">R$ 0,00</div></div>
     </div>
 
-    <div class="charts">
-        <div class="card"><h3>Top 5 Sabores</h3><canvas id="chartS"></canvas></div>
-        <div class="card"><h3>Vendas vs Gastos</h3><canvas id="chartF"></canvas></div>
-    </div>
+    <h3>📊 RANKING DE PRODUTOS (MÊS ATUAL)</h3>
+    <table id="tab-sabores">
+        <thead><tr><th>Sabor</th><th>Volume (Qtd)</th><th>Total (R$)</th></tr></thead>
+        <tbody></tbody>
+    </table>
+
+    <h3>🕒 LOG DE ÚLTIMAS TRANSAÇÕES</h3>
+    <table id="tab-vendas">
+        <thead><tr><th>Data/Hora</th><th>Sabor</th><th>Valor</th></tr></thead>
+        <tbody></tbody>
+    </table>
 
     <script>
-        let cS, cF;
         async function update() {
             const res = await fetch('/api/status');
             const d = await res.json();
             const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
             document.getElementById('v_hoje').innerText = fmt(d.vendas_hoje);
-            document.getElementById('v_mes').innerText = fmt(d.vendas_mes);
             document.getElementById('t_medio').innerText = fmt(d.ticket_medio);
+            document.getElementById('proj').innerText = fmt(d.projecao_mes);
             document.getElementById('lucro').innerText = fmt(d.lucro_mes);
             document.getElementById('time').innerText = d.ultima_atualizacao;
 
-            // Lógica do Alerta (Aparece se houver gasto relevante)
-            if(d.valor_alerta > 0) {
-                document.getElementById('alerta').style.display = 'block';
-                document.getElementById('item-alerta').innerText = d.item_alerta;
-                document.getElementById('valor-alerta').innerText = fmt(d.valor_alerta);
-            }
+            // Tabela Ranking
+            const tbodyS = document.querySelector('#tab-sabores tbody');
+            tbodyS.innerHTML = d.ranking_sabores.map(s => `
+                <tr><td>${s.SABORES}</td><td>${s.quantidade}</td><td>${fmt(s.vendas)}</td></tr>
+            `).join('');
 
-            // Gráfico Pizza
-            if(cS) cS.destroy();
-            cS = new Chart(document.getElementById('chartS'), {
-                type: 'doughnut',
-                data: { labels: Object.keys(d.top_sabores), datasets: [{ data: Object.values(d.top_sabores), backgroundColor: ['#38bdf8', '#818cf8', '#c084fc', '#fb7185', '#fbbf24'] }] },
-                options: { plugins: { legend: { labels: { color: '#fff' } } } }
-            });
-
-            // Gráfico Barras
-            if(cF) cF.destroy();
-            cF = new Chart(document.getElementById('chartF'), {
-                type: 'bar',
-                data: { labels: ['Vendas', 'Gastos'], datasets: [{ label: 'R$', data: [d.vendas_mes, d.gastos_mes], backgroundColor: ['#2ecc71', '#e74c3c'] }] },
-                options: { scales: { y: { ticks: { color: '#fff' } } } }
-            });
+            // Tabela Log
+            const tbodyV = document.querySelector('#tab-vendas tbody');
+            tbodyV.innerHTML = d.ultimas_vendas.map(v => `
+                <tr><td>${v['DATA E HORA']}</td><td>${v.SABORES}</td><td>${fmt(v['VALOR DA VENDA'])}</td></tr>
+            `).join('');
         }
         setInterval(update, 30000); update();
     </script>
