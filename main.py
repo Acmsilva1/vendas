@@ -5,7 +5,7 @@ import gspread
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
 
 app = FastAPI()
@@ -41,37 +41,32 @@ def processar_dados():
     df_vendas['DATA_DT'] = pd.to_datetime(df_vendas['DATA E HORA'], dayfirst=True, errors='coerce').dt.date
     df_gastos['DATA_DT'] = pd.to_datetime(df_gastos['DATA E HORA'], dayfirst=True, errors='coerce').dt.date
 
-    # --- KPIs ANALÍTICOS ---
-    vendas_mes = df_vendas[df_vendas['DATA_DT'] >= inicio_mes].copy()
-    total_mes = vendas_mes['VALOR DA VENDA'].sum()
-    qtd_vendas_mes = len(vendas_mes)
-    ticket_medio = total_mes / qtd_vendas_mes if qtd_vendas_mes > 0 else 0
+    # --- MÉTRICAS DE HOJE ---
+    vendas_hoje = df_vendas[df_vendas['DATA_DT'] == hoje]['VALOR DA VENDA'].sum()
+    gastos_hoje = df_gastos[df_gastos['DATA_DT'] == hoje]['VALOR'].sum()
 
-    # Projeção de Faturamento (Governança: Previsibilidade)
-    dias_passados = agora.day
-    venda_media_diaria = total_mes / dias_passados
-    projecao_fim_mes = venda_media_diaria * 30 # Estimativa simples
-
-    # Gastos e Lucro
+    # --- MÉTRICAS DO MÊS ---
+    vendas_mes = df_vendas[df_vendas['DATA_DT'] >= inicio_mes]
     gastos_mes = df_gastos[df_gastos['DATA_DT'] >= inicio_mes]
-    total_gastos = gastos_mes['VALOR'].sum()
+    
+    total_vendas_mes = vendas_mes['VALOR DA VENDA'].sum()
+    total_gastos_mes = gastos_mes['VALOR'].sum()
+    lucro_liquido = total_vendas_mes - total_gastos_mes
 
-    # --- TABELA 1: RANKING DE SABORES (VALOR E VOLUME) ---
+    # --- TABELAS (MANTIDAS) ---
     ranking_sabores = vendas_mes.groupby('SABORES').agg(
         vendas=('VALOR DA VENDA', 'sum'),
         quantidade=('VALOR DA VENDA', 'count')
     ).reset_index().sort_values(by='vendas', ascending=False).to_dict(orient='records')
 
-    # --- TABELA 2: ÚLTIMAS 5 VENDAS ---
     ultimas_vendas = df_vendas.sort_values(by='DATA E HORA', ascending=False).head(5)[['DATA E HORA', 'SABORES', 'VALOR DA VENDA']].to_dict(orient='records')
 
     return {
-        "vendas_hoje": float(df_vendas[df_vendas['DATA_DT'] == hoje]['VALOR DA VENDA'].sum()),
-        "vendas_mes": float(total_mes),
-        "ticket_medio": float(ticket_medio),
-        "projecao_mes": float(projecao_fim_mes),
-        "gastos_mes": float(total_gastos),
-        "lucro_mes": float(total_mes - total_gastos),
+        "vendas_hoje": float(vendas_hoje),
+        "gastos_hoje": float(gastos_hoje),
+        "vendas_mes": float(total_vendas_mes),
+        "gastos_mes": float(total_gastos_mes),
+        "lucro_mes": float(lucro_liquido),
         "ranking_sabores": ranking_sabores,
         "ultimas_vendas": ultimas_vendas,
         "ultima_atualizacao": agora.strftime("%H:%M:%S")
