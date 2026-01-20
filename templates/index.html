@@ -2,177 +2,49 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Business Intel | André TI</title>
+    <title>BI Dashboard | André TI</title>
     <style>
-        :root { 
-            --bg: #0a0a0a; 
-            --card: #111; 
-            --border: #333; 
-            --accent: #3498db; 
-            --green: #2ecc71; 
-            --red: #e74c3c; 
-            --yellow: #f1c40f;
-        }
-        
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: var(--bg); 
-            color: #eee; 
-            margin: 0; 
-            padding: 20px; 
-        }
-
-        .header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            border-bottom: 1px solid var(--border); 
-            padding-bottom: 10px; 
-            margin-bottom: 20px; 
-        }
-
-        .grid-main { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
-            gap: 15px; 
-            margin-bottom: 30px; 
-        }
-
-        .card { 
-            background: var(--card); 
-            border-top: 4px solid var(--accent); 
-            padding: 15px; 
-            border-radius: 4px; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
-        }
-
-        .card h3 { 
-            font-size: 0.7rem; 
-            color: #888; 
-            margin: 0; 
-            text-transform: uppercase; 
-            letter-spacing: 1px;
-        }
-
-        .valor { 
-            font-size: 1.6rem; 
-            font-weight: bold; 
-            margin-top: 8px; 
-        }
-
-        .tables-container { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-            gap: 25px; 
-        }
-
-        h3.table-title {
-            font-size: 0.9rem;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            background: var(--card); 
-            font-size: 0.85rem; 
-        }
-
-        th, td { 
-            padding: 12px; 
-            text-align: left; 
-            border-bottom: 1px solid var(--border); 
-        }
-
-        th { 
-            color: var(--accent); 
-            text-transform: uppercase; 
-            font-size: 0.7rem; 
-            background: #161616;
-        }
-
-        tr:hover { background: #181818; }
-
-        /* Estilo para Outliers */
-        .row-outlier { 
-            background: #2d0a0a !important; 
-            border-left: 4px solid var(--red); 
-        }
-        
-        .badge-outlier {
-            color: var(--red);
-            font-weight: bold;
-        }
-
-        .text-muted { color: #666; font-size: 0.75rem; }
+        :root { --bg: #0a0a0a; --card: #111; --border: #333; --accent: #3498db; --green: #2ecc71; --red: #e74c3c; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #eee; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
+        .grid-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .card { background: var(--card); border-top: 4px solid var(--accent); padding: 15px; border-radius: 4px; }
+        .valor { font-size: 1.8rem; font-weight: bold; margin-top: 8px; }
+        .tables-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; }
+        table { width: 100%; border-collapse: collapse; background: var(--card); font-size: 0.85rem; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { color: var(--accent); text-transform: uppercase; font-size: 0.7rem; }
+        .row-outlier { background: #2d0a0a !important; border-left: 4px solid var(--red); }
+        .badge-outlier { color: var(--red); font-weight: bold; }
     </style>
 </head>
 <body>
-
     <div class="header">
-        <h2 style="margin:0;">SYSTEM MANAGEMENT <span style="color:var(--accent)">V2.2</span></h2>
-        <p>RECARGA EM: <span id="time" style="color:var(--yellow);">--:--:--</span></p>
+        <h2>SYSTEM MANAGEMENT <span style="color:var(--accent)">V2.3</span></h2>
+        <p>UPDATE: <span id="time" style="color:#f1c40f;">--:--:--</span></p>
     </div>
 
     <div class="grid-main">
-        <div class="card" style="border-top-color: var(--accent);">
-            <h3>Vendas Hoje</h3>
-            <div class="valor" id="v_hoje">R$ 0,00</div>
-        </div>
-        <div class="card" style="border-top-color: var(--red);">
-            <h3>Gastos Hoje</h3>
-            <div class="valor" id="g_hoje">R$ 0,00</div>
-        </div>
-        <div class="card" style="border-top-color: var(--accent);">
-            <h3>Vendas Mês</h3>
-            <div class="valor" id="v_mes">R$ 0,00</div>
-        </div>
-        <div class="card" style="border-top-color: #e67e22;">
-            <h3>Gastos Mês</h3>
-            <div class="valor" id="g_mes">R$ 0,00</div>
-        </div>
-        <div class="card" style="border-top-color: var(--green); background: #061a0e;">
-            <h3>Lucro Líquido</h3>
-            <div class="valor" id="lucro" style="color:var(--green)">R$ 0,00</div>
-        </div>
+        <div class="card" style="border-top-color: var(--accent);"><h3>Vendas Hoje</h3><div class="valor" id="v_hoje">R$ 0,00</div></div>
+        <div class="card" style="border-top-color: var(--red);"><h3>Gastos Hoje</h3><div class="valor" id="g_hoje">R$ 0,00</div></div>
+        <div class="card"><h3>Vendas Mês</h3><div class="valor" id="v_mes">R$ 0,00</div></div>
+        <div class="card" style="border-top-color: #e67e22;"><h3>Gastos Mês</h3><div class="valor" id="g_mes">R$ 0,00</div></div>
+        <div class="card" style="border-top-color: var(--green); background: #061a0e;"><h3>Lucro Líquido</h3><div class="valor" id="lucro" style="color:var(--green)">R$ 0,00</div></div>
     </div>
 
     <div class="tables-container">
-        
         <div>
-            <h3 class="table-title">📊 RANKING PRODUTOS (MÊS)</h3>
-            <table id="tab-sabores">
-                <thead>
-                    <tr><th>Sabor</th><th>Qtd</th><th>Total</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+            <h3>📊 RANKING PRODUTOS (MÊS)</h3>
+            <table id="tab-sabores"><thead><tr><th>Sabor</th><th>Qtd</th><th>Total</th></tr></thead><tbody></tbody></table>
         </div>
-
         <div>
-            <h3 class="table-title" style="color: var(--red);">💸 ANÁLISE DE OUTLIERS (GASTOS)</h3>
-            <table id="tab-despesas">
-                <thead>
-                    <tr><th>Descrição</th><th>Total</th><th>% s/ Total</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+            <h3 style="color: var(--red);">💸 ANÁLISE DE OUTLIERS (GASTOS)</h3>
+            <table id="tab-despesas"><thead><tr><th>Descrição</th><th>Total</th><th>% s/ Total</th></tr></thead><tbody></tbody></table>
         </div>
-
         <div>
-            <h3 class="table-title">🕒 ÚLTIMOS LANÇAMENTOS</h3>
-            <table id="tab-vendas">
-                <thead>
-                    <tr><th>Data/Hora</th><th>Sabor</th><th>Valor</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+            <h3>🕒 ÚLTIMOS LANÇAMENTOS</h3>
+            <table id="tab-vendas"><thead><tr><th>Data/Hora</th><th>Sabor</th><th>Valor</th></tr></thead><tbody></tbody></table>
         </div>
-
     </div>
 
     <script>
@@ -180,15 +52,8 @@
             try {
                 const res = await fetch('/api/status');
                 const d = await res.json();
-                
-                if (d.erro) {
-                    console.error("Erro no Backend:", d.erro);
-                    return;
-                }
-
                 const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-                // Atualizar Cards Principais
                 document.getElementById('v_hoje').innerText = fmt(d.vendas_hoje);
                 document.getElementById('g_hoje').innerText = fmt(d.gastos_hoje);
                 document.getElementById('v_mes').innerText = fmt(d.vendas_mes);
@@ -196,46 +61,15 @@
                 document.getElementById('lucro').innerText = fmt(d.lucro_mes);
                 document.getElementById('time').innerText = d.ultima_atualizacao;
 
-                // Tabela de Sabores
-                document.querySelector('#tab-sabores tbody').innerHTML = d.ranking_sabores.map(s => `
-                    <tr>
-                        <td>${s.SABORES}</td>
-                        <td>${s.quantidade}</td>
-                        <td>${fmt(s.vendas)}</td>
-                    </tr>
-                `).join('');
-
-                // Tabela de Despesas com Lógica de Outlier
+                document.querySelector('#tab-sabores tbody').innerHTML = d.ranking_sabores.map(s => `<tr><td>${s.SABORES}</td><td>${s.quantidade}</td><td>${fmt(s.vendas)}</td></tr>`).join('');
                 document.querySelector('#tab-despesas tbody').innerHTML = d.ranking_despesas.map(g => {
-                    const isOutlier = g.pct > 20; // Destaque se representar > 20% do gasto total
-                    return `
-                        <tr class="${isOutlier ? 'row-outlier' : ''}">
-                            <td>${g.DESCRIÇÃO}</td>
-                            <td>${fmt(g.total)}</td>
-                            <td class="${isOutlier ? 'badge-outlier' : ''}">${g.pct.toFixed(2)}%</td>
-                        </tr>
-                    `;
+                    const isOutlier = g.pct > 20;
+                    return `<tr class="${isOutlier ? 'row-outlier' : ''}"><td>${g.DESCRIÇÃO}</td><td>${fmt(g.total)}</td><td class="${isOutlier ? 'badge-outlier' : ''}">${g.pct.toFixed(2)}%</td></tr>`;
                 }).join('');
-
-                // Tabela de Últimas Vendas
-                document.querySelector('#tab-vendas tbody').innerHTML = d.ultimas_vendas.map(v => `
-                    <tr>
-                        <td class="text-muted">${v['DATA E HORA']}</td>
-                        <td>${v.SABORES}</td>
-                        <td style="color: var(--green)">${fmt(v['VALOR DA VENDA'])}</td>
-                    </tr>
-                `).join('');
-
-            } catch (e) {
-                console.error("Falha na conexão com a API:", e);
-            }
+                document.querySelector('#tab-vendas tbody').innerHTML = d.ultimas_vendas.map(v => `<tr><td>${v['DATA E HORA']}</td><td>${v.SABORES}</td><td style="color:var(--green)">${fmt(v['VALOR DA VENDA'])}</td></tr>`).join('');
+            } catch (e) { console.error(e); }
         }
-
-        // Atualização automática a cada 30 segundos
-        setInterval(update, 30000);
-        
-        // Executa ao carregar a página
-        update();
+        setInterval(update, 30000); update();
     </script>
 </body>
 </html>
