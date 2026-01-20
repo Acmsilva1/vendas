@@ -36,39 +36,46 @@ def processar_dados():
     tz = pytz.timezone('America/Sao_Paulo')
     hoje = datetime.now(tz).date()
     inicio_mes = hoje.replace(day=1)
+    ultimo_dia_mes_ant = inicio_mes - timedelta(days=1)
+    inicio_mes_ant = ultimo_dia_mes_ant.replace(day=1)
 
     for df in [df_vendas, df_gastos]:
         df['DATA_DT'] = pd.to_datetime(df['DATA E HORA'], dayfirst=True, errors='coerce').dt.date
 
-    # --- CÁLCULOS IGUAIS AO STREAMLIT ---
-    # Vendas
+    # --- MÉTRICAS DE VENDAS ---
     vendas_mes = df_vendas[df_vendas['DATA_DT'] >= inicio_mes]
     vendas_hoje = df_vendas[df_vendas['DATA_DT'] == hoje]
+    vendas_mes_ant = df_vendas[(df_vendas['DATA_DT'] >= inicio_mes_ant) & (df_vendas['DATA_DT'] <= ultimo_dia_mes_ant)]
     
     total_mes = vendas_mes['VALOR DA VENDA'].sum()
     total_hoje = vendas_hoje['VALOR DA VENDA'].sum()
-    ticket_medio = total_mes / len(vendas_mes) if len(vendas_mes) > 0 else 0
+    total_mes_ant = vendas_mes_ant['VALOR DA VENDA'].sum()
+    
+    # Delta (Comparativo com mês anterior)
+    delta_vendas = ((total_mes - total_mes_ant) / total_mes_ant * 100) if total_mes_ant > 0 else 0
 
-    # Gastos
+    # --- MÉTRICAS DE GASTOS ---
     gastos_mes = df_gastos[df_gastos['DATA_DT'] >= inicio_mes]
     total_gastos_mes = gastos_mes['VALOR'].sum()
+    lucro_mes = total_mes - total_gastos_mes
 
-    # Top Sabores (Gráfico de Pizza)
+    # --- SABORES E PRODUTIVIDADE ---
     top_sabores = vendas_mes['SABORES'].value_counts().head(5).to_dict()
+    
+    # Produtividade por dia da semana (Igual ao seu Streamlit)
+    df_vendas['dia_semana'] = pd.to_datetime(df_vendas['DATA E HORA'], dayfirst=True).dt.day_name()
+    prod_dia = df_vendas[df_vendas['DATA_DT'] >= inicio_mes]['dia_semana'].value_counts().to_dict()
 
     return {
         "vendas_hoje": float(total_hoje),
         "vendas_mes": float(total_mes),
+        "delta_vendas_mes": round(delta_vendas, 2),
         "gastos_mes": float(total_gastos_mes),
-        "lucro_mes": float(total_mes - total_gastos_mes),
-        "ticket_medio": float(ticket_medio),
+        "lucro_mes": float(lucro_mes),
         "top_sabores": top_sabores,
+        "produtividade_dia": prod_dia,
         "ultima_atualizacao": datetime.now(tz).strftime("%H:%M:%S")
     }
-
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/api/status")
 async def api_status():
