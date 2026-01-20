@@ -1,79 +1,21 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Dashboard Pro | André TI</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { font-family: 'Inter', sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 10px; }
-        .grid-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 20px; }
-        .card { background: #1e293b; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .card h3 { color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; margin: 0; }
-        .valor { font-size: 1.8rem; font-weight: bold; margin-top: 10px; color: #38bdf8; }
-        .charts-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
-        @media (max-width: 768px) { .charts-container { grid-template-columns: 1fr; } }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>🚀 Dashboard de Vendas</h1>
-        <p>Atualização: <span id="time" style="color: #fbbf24">--:--</span></p>
-    </div>
+<script>
+    // ... dentro da função update() ...
+    
+    // Novo Gráfico: Produtividade por Dia
+    const labelsP = Object.keys(d.produtividade_dia);
+    const valuesP = Object.values(d.produtividade_dia);
+    if(chartP) chartP.destroy();
+    chartP = new Chart(document.getElementById('chartProd'), {
+        type: 'bar',
+        data: { 
+            labels: labelsP, 
+            datasets: [{ label: 'Vendas por Dia', data: valuesP, backgroundColor: '#3498db' }] 
+        },
+        options: { scales: { y: { beginAtZero: true, ticks: { color: '#fff' } }, x: { ticks: { color: '#fff' } } } }
+    });
 
-    <div class="grid-kpis">
-        <div class="card"><h3>Vendas Hoje</h3><div class="valor" id="v_hoje">R$ 0,00</div></div>
-        <div class="card"><h3>Faturamento Mês</h3><div class="valor" id="v_mes">R$ 0,00</div></div>
-        <div class="card"><h3>Ticket Médio</h3><div class="valor" id="t_medio">R$ 0,00</div></div>
-        <div class="card"><h3>Lucro Líquido</h3><div class="valor" id="lucro" style="color: #2ecc71">R$ 0,00</div></div>
-    </div>
-
-    <div class="charts-container">
-        <div class="card">
-            <h3>Top 5 Sabores (Mês)</h3>
-            <canvas id="chartSabores"></canvas>
-        </div>
-        <div class="card">
-            <h3>Saúde Financeira</h3>
-            <canvas id="chartFinanceiro"></canvas>
-        </div>
-    </div>
-
-    <script>
-        let chartS, chartF;
-
-        async function update() {
-            const res = await fetch('/api/status');
-            const d = await res.json();
-            const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-            document.getElementById('v_hoje').innerText = fmt(d.vendas_hoje);
-            document.getElementById('v_mes').innerText = fmt(d.vendas_mes);
-            document.getElementById('t_medio').innerText = fmt(d.ticket_medio);
-            document.getElementById('lucro').innerText = fmt(d.lucro_mes);
-            document.getElementById('time').innerText = d.ultima_atualizacao;
-
-            // Atualizar Gráfico de Pizza (Sabores)
-            const labelsS = Object.keys(d.top_sabores);
-            const valuesS = Object.values(d.top_sabores);
-            if(chartS) chartS.destroy();
-            chartS = new Chart(document.getElementById('chartSabores'), {
-                type: 'doughnut',
-                data: { labels: labelsS, datasets: [{ data: valuesS, backgroundColor: ['#38bdf8', '#818cf8', '#c084fc', '#fb7185', '#fbbf24'] }] },
-                options: { plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } } }
-            });
-
-            // Atualizar Gráfico Financeiro (Vendas vs Gastos)
-            if(chartF) chartF.destroy();
-            chartF = new Chart(document.getElementById('chartFinanceiro'), {
-                type: 'bar',
-                data: { labels: ['Vendas', 'Gastos'], datasets: [{ label: 'R$', data: [d.vendas_mes, d.gastos_mes], backgroundColor: ['#2ecc71', '#e74c3c'] }] },
-                options: { scales: { y: { ticks: { color: '#fff' } } } }
-            });
-        }
-
-        setInterval(update, 30000);
-        update();
-    </script>
-</body>
-</html>
+    // Mostrar o Delta
+    const deltaEl = document.getElementById('delta_vendas');
+    deltaEl.innerText = (d.delta_vendas_mes >= 0 ? "+" : "") + d.delta_vendas_mes + "% vs mês ant.";
+    deltaEl.style.color = d.delta_vendas_mes >= 0 ? "#2ecc71" : "#e74c3c";
+</script>
