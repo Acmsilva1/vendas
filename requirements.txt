@@ -1,6 +1,7 @@
 fastapi
 uvicorn
-gspread
 pandas
-jinja2
+gspread
 pytz
+jinja2
+cachetools
