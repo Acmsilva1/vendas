@@ -2,53 +2,83 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>BI Dashboard | André TI</title>
+    <title>BI Dashboard | André TI V2.6</title>
     <style>
-        :root { --bg: #0a0a0a; --card: #111; --border: #333; --accent: #3498db; --green: #2ecc71; --red: #e74c3c; }
+        :root { --bg: #0a0a0a; --card: #111; --border: #333; --accent: #3498db; --green: #2ecc71; --red: #e74c3c; --yellow: #f1c40f; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #eee; margin: 0; padding: 20px; }
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
-        .grid-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .grid-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 30px; }
         .card { background: var(--card); border-top: 4px solid var(--accent); padding: 15px; border-radius: 4px; }
-        .valor { font-size: 1.8rem; font-weight: bold; margin-top: 8px; }
-        table { width: 100%; border-collapse: collapse; background: var(--card); margin-bottom: 20px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
-        th { color: var(--accent); font-size: 0.7rem; text-transform: uppercase; }
+        .valor { font-size: 1.6rem; font-weight: bold; margin-top: 8px; }
+        .tables-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        table { width: 100%; border-collapse: collapse; background: var(--card); font-size: 0.8rem; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { color: var(--accent); text-transform: uppercase; font-size: 0.7rem; }
+        .row-outlier { background: #2d0a0a !important; border-left: 4px solid var(--red); }
         .loading { opacity: 0.3; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h2>DASHBOARD <span style="color:var(--accent)">PRO</span></h2>
-        <p>STATUS: <span id="time" style="color:var(--accent)">--:--:--</span></p>
+        <h2>SYSTEM MGMT <span style="color:var(--accent)">V2.6</span></h2>
+        <p>UPDATE: <span id="time" style="color:var(--yellow)">--:--:--</span></p>
     </div>
 
     <div id="content">
         <div class="grid-main">
+            <div class="card" style="border-top-color: var(--accent);"><h3>Vendas Hoje</h3><div class="valor" id="v_hoje">R$ 0,00</div></div>
+            <div class="card" style="border-top-color: var(--red);"><h3>Gastos Hoje</h3><div class="valor" id="g_hoje">R$ 0,00</div></div>
             <div class="card"><h3>Vendas Mês</h3><div class="valor" id="v_mes">R$ 0,00</div></div>
-            <div class="card" style="border-top-color: var(--red);"><h3>Gastos Mês</h3><div class="valor" id="g_mes">R$ 0,00</div></div>
-            <div class="card" style="border-top-color: var(--green);"><h3>Lucro</h3><div class="valor" id="lucro">R$ 0,00</div></div>
+            <div class="card" style="border-top-color: #e67e22;"><h3>Gastos Mês</h3><div class="valor" id="g_mes">R$ 0,00</div></div>
+            <div class="card" style="border-top-color: var(--green); background: #061a0e;"><h3>Lucro Líquido</h3><div class="valor" id="lucro" style="color:var(--green)">R$ 0,00</div></div>
         </div>
-        <table id="tab-sabores"><thead><tr><th>Sabor</th><th>Qtd</th><th>Total</th></tr></thead><tbody></tbody></table>
+
+        <div class="tables-container">
+            <div>
+                <h3>📊 PRODUTOS (MÊS)</h3>
+                <table id="tab-sabores"><thead><tr><th>Sabor</th><th>Qtd</th><th>Total</th></tr></thead><tbody></tbody></table>
+            </div>
+            <div>
+                <h3 style="color: var(--red);">💸 GASTOS (OUTLIERS)</h3>
+                <table id="tab-despesas"><thead><tr><th>Descrição</th><th>Total</th><th>%</th></tr></thead><tbody></tbody></table>
+            </div>
+            <div>
+                <h3>🕒 ÚLTIMOS LANÇAMENTOS</h3>
+                <table id="tab-vendas"><thead><tr><th>Data/Hora</th><th>Sabor</th><th>Valor</th></tr></thead><tbody></tbody></table>
+            </div>
+        </div>
     </div>
 
     <script>
-        const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const fmt = (v) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        
         async function update() {
-            if (document.hidden) return; // Regra de Ouro: Aba oculta não gasta servidor
+            if (document.hidden) return; 
             document.getElementById('content').classList.add('loading');
             try {
                 const res = await fetch('/api/status');
                 const d = await res.json();
+                
+                document.getElementById('v_hoje').innerText = fmt(d.vendas_hoje);
+                document.getElementById('g_hoje').innerText = fmt(d.gastos_hoje);
                 document.getElementById('v_mes').innerText = fmt(d.vendas_mes);
                 document.getElementById('g_mes').innerText = fmt(d.gastos_mes);
                 document.getElementById('lucro').innerText = fmt(d.lucro_mes);
                 document.getElementById('time').innerText = d.ultima_atualizacao;
+                
                 document.querySelector('#tab-sabores tbody').innerHTML = d.ranking_sabores.map(s => 
                     `<tr><td>${s.SABORES}</td><td>${s.quantidade}</td><td>${fmt(s.vendas)}</td></tr>`).join('');
-            } catch (e) { console.error("Erro no fetch"); }
+                
+                document.querySelector('#tab-despesas tbody').innerHTML = d.ranking_despesas.map(g => 
+                    `<tr class="${g.pct > 20 ? 'row-outlier' : ''}"><td>${g.DESCRIÇÃO}</td><td>${fmt(g.total)}</td><td>${g.pct}%</td></tr>`).join('');
+                
+                document.querySelector('#tab-vendas tbody').innerHTML = d.ultimas_vendas.map(v => 
+                    `<tr><td>${v['DATA E HORA']}</td><td>${v.SABORES}</td><td style="color:var(--green)">${fmt(v['VALOR DA VENDA'])}</td></tr>`).join('');
+            } catch (e) { console.error("Erro na atualização"); }
             document.getElementById('content').classList.remove('loading');
         }
-        setInterval(update, 300000); // 5 minutos: equilíbrio perfeito
+
+        setInterval(update, 300000); 
         update();
         document.addEventListener("visibilitychange", () => { if (!document.hidden) update(); });
     </script>
