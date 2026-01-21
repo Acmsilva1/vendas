@@ -8,83 +8,97 @@ from fastapi.templating import Jinja2Templates
 from datetime import datetime
 import pytz
 import re
+from cachetools import TTLCache
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# --- CONFIGURAÇÃO VIA VARIÁVEIS DE AMBIENTE (GOVERNANÇA) ---
-SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
-GCP_JSON = os.environ.get("GCP_SERVICE_ACCOUNT")
+# Cache de 10 minutos para não estourar cota do Google nem paciência do usuário
+# maxsize=1 pois só guardamos um dicionário de resultados
+status_cache = TTLCache(maxsize=1, ttl=600)
 
-def get_db_connection():
-    if not SPREADSHEET_ID or not GCP_JSON:
-        raise ValueError("ERRO: Variáveis de ambiente SPREADSHEET_ID ou GCP_SERVICE_ACCOUNT não configuradas!")
-    
-    creds_dict = json.loads(GCP_JSON)
-    gc = gspread.service_account_from_dict(creds_dict)
-    return gc.open_by_key(SPREADSHEET_ID)
+# --- SINGLETON PARA CONEXÃO (GOVERNANÇA E PERFORMANCE) ---
+_gc_client = None
 
-def limpar_valor_blindado(valor):
-    """Extrai apenas números de strings sujas como 'R$ 25,00R$ 27,00'"""
-    if pd.isna(valor) or valor == "": return 0.0
-    s = str(valor).replace('R$', '').replace(' ', '').strip()
-    match = re.search(r'(\d+[\d\.,]*)', s)
-    if match:
-        s = match.group(1)
-    if ',' in s and '.' in s:
-        s = s.replace('.', '').replace(',', '.') if s.rfind(',') > s.rfind('.') else s.replace(',', '')
-    elif ',' in s: s = s.replace(',', '.')
-    try: return float(s)
-    except: return 0.0
+def get_gc_client():
+    global _gc_client
+    if _gc_client is None:
+        gcp_json = os.environ.get("GCP_SERVICE_ACCOUNT")
+        if not gcp_json:
+            raise ValueError("GCP_SERVICE_ACCOUNT não configurada!")
+        creds_dict = json.loads(gcp_json)
+        _gc_client = gspread.service_account_from_dict(creds_dict)
+    return _gc_client
+
+def limpar_coluna_financeira(serie):
+    """Limpa a coluna inteira de uma vez (Vetorizado) em vez de linha por linha"""
+    return (serie.astype(str)
+            .str.replace(r'[R\$\s]', '', regex=True)
+            .str.replace('.', '', regex=False)
+            .str.replace(',', '.', regex=False)
+            .str.extract(r'(\d+\.?\d*)')[0]
+            .fillna(0)
+            .astype(float))
 
 def processar_dados():
-    sh = get_db_connection()
+    # Se estiver no cache, retorna imediatamente
+    if "dashboard_data" in status_cache:
+        return status_cache["dashboard_data"]
+
+    spreadsheet_id = os.environ.get("SPREADSHEET_ID")
+    gc = get_gc_client()
+    sh = gc.open_by_key(spreadsheet_id)
+
+    # Pegando tudo de uma vez para reduzir I/O
     df_vendas = pd.DataFrame(sh.worksheet("vendas").get_all_records())
     df_gastos = pd.DataFrame(sh.worksheet("gastos").get_all_records())
 
-    # Sanitização de Valores e Strings
-    df_vendas['VALOR DA VENDA'] = df_vendas['VALOR DA VENDA'].apply(limpar_valor_blindado)
-    df_gastos['VALOR'] = df_gastos['VALOR'].apply(limpar_valor_blindado)
+    # Sanitização Vetorizada (MUITO mais rápido que .apply)
+    df_vendas['VALOR DA VENDA'] = limpar_coluna_financeira(df_vendas['VALOR DA VENDA'])
+    df_gastos['VALOR'] = limpar_coluna_financeira(df_gastos['VALOR'])
     
-    # Tratamento da Coluna PRODUTO (Maiúsculas e sem espaços)
     if 'PRODUTO' in df_gastos.columns:
         df_gastos['PRODUTO'] = df_gastos['PRODUTO'].astype(str).str.upper().str.strip()
-    
+
+    # Datas
     tz = pytz.timezone('America/Sao_Paulo')
     agora = datetime.now(tz)
-    hoje, inicio_mes = agora.date(), agora.date().replace(day=1)
+    hoje = agora.date()
+    inicio_mes = hoje.replace(day=1)
 
+    # Conversão de data otimizada
     df_vendas['DATA_DT'] = pd.to_datetime(df_vendas['DATA E HORA'], dayfirst=True, errors='coerce').dt.date
     df_gastos['DATA_DT'] = pd.to_datetime(df_gastos['DATA E HORA'], dayfirst=True, errors='coerce').dt.date
 
-    # KPIs dos Cards
+    # Como você disse que os dados zeram no mês, o filtro de mês aqui 
+    # serve como uma segurança extra de governança
+    mask_vendas_mes = df_vendas['DATA_DT'] >= inicio_mes
+    mask_gastos_mes = df_gastos['DATA_DT'] >= inicio_mes
+
     v_hoje = df_vendas[df_vendas['DATA_DT'] == hoje]['VALOR DA VENDA'].sum()
     g_hoje = df_gastos[df_gastos['DATA_DT'] == hoje]['VALOR'].sum()
-    v_mes = df_vendas[df_vendas['DATA_DT'] >= inicio_mes]['VALOR DA VENDA'].sum()
-    g_mes = df_gastos[df_gastos['DATA_DT'] >= inicio_mes]['VALOR'].sum()
+    
+    v_mes = df_vendas[mask_vendas_mes]['VALOR DA VENDA'].sum()
+    g_mes = df_gastos[mask_gastos_mes]['VALOR'].sum()
 
     # Ranking Sabores (Mês)
-    ranking_sabores = df_vendas[df_vendas['DATA_DT'] >= inicio_mes].groupby('SABORES').agg(
+    ranking_sabores = df_vendas[mask_vendas_mes].groupby('SABORES').agg(
         vendas=('VALOR DA VENDA', 'sum'),
         quantidade=('VALOR DA VENDA', 'count')
     ).reset_index().sort_values(by='vendas', ascending=False).to_dict(orient='records')
 
-    # --- ANÁLISE DE OUTLIERS DE GASTOS (POR PRODUTO) ---
+    # Ranking Despesas
     ranking_despesas = []
     if 'PRODUTO' in df_gastos.columns:
-        gastos_mes = df_gastos[df_gastos['DATA_DT'] >= inicio_mes].copy()
-        ranking_despesas = gastos_mes.groupby('PRODUTO').agg(
-            total=('VALOR', 'sum')
-        ).reset_index().sort_values(by='total', ascending=False)
-        
-        # Métrica de Representatividade (%)
+        df_g_mes = df_gastos[mask_gastos_mes]
+        ranking_despesas = df_g_mes.groupby('PRODUTO').agg(total=('VALOR', 'sum')).reset_index()
         ranking_despesas['pct'] = (ranking_despesas['total'] / g_mes * 100).round(2) if g_mes > 0 else 0
-        ranking_despesas = ranking_despesas.rename(columns={'PRODUTO': 'DESCRIÇÃO'}).to_dict(orient='records')
+        ranking_despesas = ranking_despesas.rename(columns={'PRODUTO': 'DESCRIÇÃO'}).sort_values(by='total', ascending=False).to_dict(orient='records')
 
-    # Log das Últimas 5 Vendas
+    # Log (Últimas 5)
     ultimas_vendas = df_vendas.sort_values(by='DATA E HORA', ascending=False).head(5)[['DATA E HORA', 'SABORES', 'VALOR DA VENDA']].to_dict(orient='records')
 
-    return {
+    resultado = {
         "vendas_hoje": float(v_hoje), "gastos_hoje": float(g_hoje),
         "vendas_mes": float(v_mes), "gastos_mes": float(g_mes),
         "lucro_mes": float(v_mes - g_mes),
@@ -93,6 +107,9 @@ def processar_dados():
         "ultimas_vendas": ultimas_vendas,
         "ultima_atualizacao": agora.strftime("%H:%M:%S")
     }
+    
+    status_cache["dashboard_data"] = resultado
+    return resultado
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -100,5 +117,7 @@ async def home(request: Request):
 
 @app.get("/api/status")
 async def api_status():
-    try: return processar_dados()
-    except Exception as e: return {"erro": str(e)}
+    try:
+        return processar_dados()
+    except Exception as e:
+        return {"erro": str(e)}
