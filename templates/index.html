@@ -7,24 +7,20 @@
         :root { --bg: #0a0a0a; --card: #111; --border: #333; --accent: #3498db; --green: #2ecc71; --red: #e74c3c; --yellow: #f1c40f; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #eee; margin: 0; padding: 20px; }
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
-        .grid-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .card { background: var(--card); border-top: 4px solid var(--accent); padding: 15px; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .grid-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .card { background: var(--card); border-top: 4px solid var(--accent); padding: 15px; border-radius: 4px; }
         .valor { font-size: 1.6rem; font-weight: bold; margin-top: 8px; }
         .sub-valor { font-size: 0.85rem; color: var(--accent); margin-top: 4px; font-weight: 500; }
-        .tables-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
-        .table-wrapper { background: var(--card); padding: 15px; border-radius: 4px; border: 1px solid var(--border); max-height: 400px; overflow-y: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
-        th { color: var(--accent); text-transform: uppercase; font-size: 0.7rem; position: sticky; top: 0; background: var(--card); }
-        .capitalize { text-transform: capitalize; }
-        .row-outlier { background: rgba(231, 76, 60, 0.1) !important; border-left: 4px solid var(--red); }
         .loading { opacity: 0.3; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { color: var(--accent); text-transform: uppercase; font-size: 0.7rem; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Vendas<small style="font-size: 12px; color: var(--accent); margin-left:10px;">PRODUTIVIDADE</small></h1>
-        <p>UPDATE: <span id="time" style="color:var(--yellow)">--:--:--</span></p>
+        <h1>Vendas <small style="font-size: 12px; color: var(--accent);">DIÁRIO & MENSAL</small></h1>
+        <p>🕒 <span id="time" style="color:var(--yellow)">--:--:--</span></p>
     </div>
 
     <div id="content">
@@ -32,63 +28,63 @@
             <div class="card" style="border-top-color: var(--accent);">
                 <h3>Vendas Hoje</h3>
                 <div class="valor" id="v_hoje">R$ 0,00</div>
-                <div class="sub-valor" id="i_hoje">0 itens vendidos</div> </div>
-            <div class="card" style="border-top-color: var(--red);"><h3>Gastos Hoje</h3><div class="valor" id="g_hoje">R$ 0,00</div></div>
-            <div class="card"><h3>Vendas Mês</h3><div class="valor" id="v_mes">R$ 0,00</div></div>
-            <div class="card" style="border-top-color: #e67e22;"><h3>Gastos Mês</h3><div class="valor" id="g_mes">R$ 0,00</div></div>
-            <div class="card" style="border-top-color: var(--green); background: #061a0e;"><h3>Lucro Líquido</h3><div class="valor" id="lucro" style="color:var(--green)">R$ 0,00</div></div>
+                <div class="sub-valor" id="i_hoje">0 itens vendidos</div>
+            </div>
+            
+            <div class="card" style="border-top-color: var(--green);">
+                <h3>Faturamento Mês</h3>
+                <div class="valor" id="v_mes">R$ 0,00</div>
+                <div class="sub-valor" id="i_mes" style="color: var(--green);">0 itens no mês</div> 
+            </div>
+
+            <div class="card" style="border-top-color: var(--red);">
+                <h3>Gastos Mês</h3>
+                <div class="valor" id="g_mes">R$ 0,00</div>
+            </div>
+
+            <div class="card" style="border-top-color: var(--yellow);">
+                <h3>Lucro Previsto</h3>
+                <div class="valor" id="lucro">R$ 0,00</div>
+            </div>
         </div>
 
-        <div class="tables-container">
-            <div class="table-wrapper">
-                <h3>📊 RANKING PRODUTOS (MÊS)</h3>
-                <table id="tab-sabores"><thead><tr><th>Sabor</th><th>Qtd</th><th>Total</th></tr></thead><tbody></tbody></table>
-            </div>
-            <div class="table-wrapper">
-                <h3 style="color: var(--red);">💸 GASTOS (OUTLIERS)</h3>
-                <table id="tab-despesas"><thead><tr><th>Descrição</th><th>Total</th><th>%</th></tr></thead><tbody></tbody></table>
-            </div>
-            <div class="table-wrapper">
-                <h3>🕒 ÚLTIMOS LANÇAMENTOS</h3>
-                <table id="tab-vendas"><thead><tr><th>Data/Hora</th><th>Sabor</th><th>Valor</th></tr></thead><tbody></tbody></table>
-            </div>
+        <div class="card" style="width: 100%;">
+            <h3>📊 TOP 10 SABORES DO MÊS</h3>
+            <table id="tab-sabores">
+                <thead><tr><th>Sabor</th><th>Quantidade</th><th>Faturamento Est.</th></tr></thead>
+                <tbody></tbody>
+            </table>
         </div>
     </div>
 
     <script>
-        // Formatação forçada para pt-BR (garante a vírgula)
         const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
         
         async function update() {
-            if (document.hidden) return; 
             document.getElementById('content').classList.add('loading');
             try {
                 const res = await fetch('/api/status');
                 const d = await res.json();
                 
+                // Atualizando os IDs com os novos dados do Python
                 document.getElementById('v_hoje').innerText = fmt(d.vendas_hoje);
-                document.getElementById('i_hoje').innerText = `${d.itens_hoje} produtos vendidos`;
-                document.getElementById('g_hoje').innerText = fmt(d.gastos_hoje);
+                document.getElementById('i_hoje').innerText = `${d.itens_hoje} itens hoje`;
+                
                 document.getElementById('v_mes').innerText = fmt(d.vendas_mes);
+                document.getElementById('i_mes').innerText = `${d.itens_mes} itens no mês`; // <-- NOVIDADE
+                
                 document.getElementById('g_mes').innerText = fmt(d.gastos_mes);
                 document.getElementById('lucro').innerText = fmt(d.lucro_mes);
                 document.getElementById('time').innerText = d.ultima_atualizacao;
                 
                 document.querySelector('#tab-sabores tbody').innerHTML = d.ranking_sabores.map(s => 
-                    `<tr><td class="capitalize">${s.SABORES.toLowerCase()}</td><td>${s.quantidade}</td><td>${fmt(s.vendas)}</td></tr>`).join('');
-                
-                document.querySelector('#tab-despesas tbody').innerHTML = d.ranking_despesas.map(g => 
-                    `<tr class="${g.pct > 20 ? 'row-outlier' : ''}"><td class="capitalize">${g.DESCRIÇÃO.toLowerCase()}</td><td>${fmt(g.total)}</td><td>${g.pct}%</td></tr>`).join('');
-                
-                document.querySelector('#tab-vendas tbody').innerHTML = d.ultimas_vendas.map(v => 
-                    `<tr><td>${v['DATA E HORA']}</td><td class="capitalize">${v.SABORES.toLowerCase()}</td><td style="color:var(--green)">${fmt(v['VALOR DA VENDA'])}</td></tr>`).join('');
+                    `<tr><td>${s.SABORES}</td><td><strong>${s.quantidade}</strong></td><td>${fmt(s.vendas)}</td></tr>`).join('');
             } catch (e) { console.error("Erro na Matrix"); }
             document.getElementById('content').classList.remove('loading');
         }
 
-        setInterval(update, 300000); 
+        setInterval(update, 300000); // 5 min
         update();
-        document.addEventListener("visibilitychange", () => { if (!document.hidden) update(); });
     </script>
 </body>
 </html>
