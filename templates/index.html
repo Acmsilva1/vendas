@@ -4,20 +4,34 @@
     <meta charset="UTF-8">
     <title>Vendas Diária | Dashboard</title>
     <style>
-        :root { --bg: #0a0a0a; --card: #111; --border: #333; --accent: #3498db; --green: #2ecc71; --red: #e74c3c; --yellow: #f1c40f; }
+        /* --- [7] UI E ESTILIZAÇÃO (CSS VARIABLES) --- */
+        :root { 
+            --bg: #0a0a0a; --card: #111; --border: #333; 
+            --accent: #3498db; --green: #2ecc71; --red: #e74c3c; --yellow: #f1c40f; 
+        }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #eee; margin: 0; padding: 20px; }
+        
+        /* Containers */
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
         .grid-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .card { background: var(--card); border-top: 4px solid var(--accent); padding: 15px; border-radius: 4px; }
+        
+        /* Cards de KPI */
+        .card { background: var(--card); border-top: 4px solid var(--accent); padding: 15px; border-radius: 4px; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-3px); }
         .valor { font-size: 1.6rem; font-weight: bold; margin-top: 8px; }
         .sub-valor { font-size: 0.85rem; color: var(--accent); margin-top: 4px; font-weight: 500; }
-        .loading { opacity: 0.3; }
+        
+        /* Feedback de Carregamento */
+        .loading { opacity: 0.3; pointer-events: none; }
+        
+        /* Tabelas */
         table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 10px; }
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
         th { color: var(--accent); text-transform: uppercase; font-size: 0.7rem; }
     </style>
 </head>
 <body>
+
     <div class="header">
         <h1>Vendas <small style="font-size: 12px; color: var(--accent);">DIÁRIO & MENSAL</small></h1>
         <p>🕒 <span id="time" style="color:var(--yellow)">--:--:--</span></p>
@@ -58,33 +72,39 @@
     </div>
 
     <script>
+        /* --- [8] JS: CONSUMO DE DADOS E ATUALIZAÇÃO --- */
         const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
         
+        /**
+         * Realiza o fetch na API e injeta os dados nos elementos HTML correspondentes.
+         */
         async function update() {
             document.getElementById('content').classList.add('loading');
             try {
                 const res = await fetch('/api/status');
                 const d = await res.json();
                 
-                // Atualizando os IDs com os novos dados do Python
+                // Mapeamento de IDs do DOM com os dados do Backend
                 document.getElementById('v_hoje').innerText = fmt(d.vendas_hoje);
                 document.getElementById('i_hoje').innerText = `${d.itens_hoje} itens hoje`;
-                
                 document.getElementById('v_mes').innerText = fmt(d.vendas_mes);
-                document.getElementById('i_mes').innerText = `${d.itens_mes} itens no mês`; // <-- NOVIDADE
-                
+                document.getElementById('i_mes').innerText = `${d.itens_mes} itens no mês`;
                 document.getElementById('g_mes').innerText = fmt(d.gastos_mes);
                 document.getElementById('lucro').innerText = fmt(d.lucro_mes);
                 document.getElementById('time').innerText = d.ultima_atualizacao;
                 
+                // Renderização da Tabela de Sabores
                 document.querySelector('#tab-sabores tbody').innerHTML = d.ranking_sabores.map(s => 
                     `<tr><td>${s.SABORES}</td><td><strong>${s.quantidade}</strong></td><td>${fmt(s.vendas)}</td></tr>`).join('');
-            } catch (e) { console.error("Erro na Matrix"); }
+            } catch (e) { 
+                console.error("Erro na Matrix: Falha ao buscar dados."); 
+            }
             document.getElementById('content').classList.remove('loading');
         }
 
-        setInterval(update, 300000); // 5 min
-        update();
+        // Intervalo de atualização (5 minutos)
+        setInterval(update, 300000); 
+        update(); // Chamada inicial
     </script>
 </body>
 </html>
