@@ -2,26 +2,55 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Vendas Diária | Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendas Diária | Dashboard André</title>
     <style>
-        /* --- [7] UI E ESTILIZAÇÃO --- */
-        :root { --bg: #0a0a0a; --card: #111; --border: #333; --accent: #3498db; --green: #2ecc71; --red: #e74c3c; --yellow: #f1c40f; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #eee; margin: 0; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
-        .grid-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .card { background: var(--card); border-top: 4px solid var(--accent); padding: 15px; border-radius: 4px; }
-        .valor { font-size: 1.6rem; font-weight: bold; margin-top: 8px; }
-        .sub-valor { font-size: 0.85rem; color: var(--accent); margin-top: 4px; font-weight: 500; }
-        .loading { opacity: 0.3; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 10px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
-        th { color: var(--accent); text-transform: uppercase; font-size: 0.7rem; }
+        /* --- [7] UI E ESTILIZAÇÃO (DESIGN SYSTEM) --- */
+        :root { 
+            --bg: #0a0a0a; --card: #111; --border: #333; 
+            --accent: #3498db; --green: #2ecc71; --red: #e74c3c; --yellow: #f1c40f; 
+        }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: var(--bg); color: #eee; margin: 0; padding: 20px; 
+        }
+
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; 
+        }
+
+        /* Layout Grid para KPIs */
+        .grid-main { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px; 
+        }
+
+        /* Estilo dos Cards */
+        .card { 
+            background: var(--card); border-top: 4px solid var(--accent); 
+            padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        .valor { font-size: 1.8rem; font-weight: bold; margin-top: 10px; }
+        .sub-valor { font-size: 0.9rem; color: var(--accent); margin-top: 5px; font-weight: 500; }
+
+        /* Tabelas */
+        .table-container { margin-top: 20px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 8px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { color: var(--accent); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; }
+        
+        /* Feedback Visual */
+        .loading { opacity: 0.4; transition: opacity 0.3s; }
+        .badge-hoje { color: var(--yellow); font-weight: bold; }
     </style>
 </head>
 <body>
+
     <div class="header">
-        <h1>Vendas <small style="font-size: 12px; color: var(--accent);">DIÁRIO & MENSAL</small></h1>
-        <p>🕒 <span id="time" style="color:var(--yellow)">--:--:--</span></p>
+        <h1>Dashboard <small style="font-size: 14px; color: var(--accent);">LOGÍSTICA & VENDAS</small></h1>
+        <p>🔄 Atualizado em: <span id="time" style="color:var(--yellow)">--:--:--</span></p>
     </div>
 
     <div id="content">
@@ -29,7 +58,7 @@
             <div class="card" style="border-top-color: var(--accent);">
                 <h3>Vendas Hoje</h3>
                 <div class="valor" id="v_hoje">R$ 0,00</div>
-                <div class="sub-valor" id="i_hoje">0 itens vendidos</div>
+                <div class="sub-valor" id="i_hoje">0 itens hoje</div>
             </div>
             
             <div class="card" style="border-top-color: var(--green);">
@@ -49,25 +78,58 @@
             </div>
         </div>
 
-        <div class="card" style="width: 100%;">
-            <h3>📊 TOP 10 SABORES DO MÊS</h3>
-            <table id="tab-sabores">
-                <thead><tr><th>Sabor</th><th>Quantidade</th><th>Faturamento Est.</th></tr></thead>
-                <tbody></tbody>
-            </table>
+        <div class="card" style="margin-bottom: 25px; border-top-color: var(--yellow);">
+            <h3>🕒 Últimas 5 Vendas do Dia</h3>
+            <div class="table-container">
+                <table id="tab-ultimas">
+                    <thead>
+                        <tr>
+                            <th>Hora</th>
+                            <th>Sabor / Produto</th>
+                            <th>Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card" style="border-top-color: var(--accent);">
+            <h3>📊 TOP 10 Sabores do Mês</h3>
+            <div class="table-container">
+                <table id="tab-sabores">
+                    <thead>
+                        <tr>
+                            <th>Sabor</th>
+                            <th>Quantidade Vendida</th>
+                            <th>Faturamento Estimado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <script>
-        /* --- [8] CONSUMO DE DADOS E ATUALIZAÇÃO --- */
-        const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
+        /* --- [8] JS: CONSUMO DE DADOS E ATUALIZAÇÃO ASSÍNCRONA --- */
+        
+        // Helper para formatar moeda brasileira
+        const fmt = (v) => new Intl.NumberFormat('pt-BR', { 
+            style: 'currency', currency: 'BRL' 
+        }).format(v || 0);
         
         async function update() {
-            document.getElementById('content').classList.add('loading');
+            const container = document.getElementById('content');
+            container.classList.add('loading');
+
             try {
                 const res = await fetch('/api/status');
                 const d = await res.json();
                 
+                // 1. Atualizando os Cards de KPI
                 document.getElementById('v_hoje').innerText = fmt(d.vendas_hoje);
                 document.getElementById('i_hoje').innerText = `${d.itens_hoje} itens hoje`;
                 document.getElementById('v_mes').innerText = fmt(d.vendas_mes);
@@ -76,13 +138,37 @@
                 document.getElementById('lucro').innerText = fmt(d.lucro_mes);
                 document.getElementById('time').innerText = d.ultima_atualizacao;
                 
-                document.querySelector('#tab-sabores tbody').innerHTML = d.ranking_sabores.map(s => 
-                    `<tr><td>${s.SABORES}</td><td><strong>${s.quantidade}</strong></td><td>${fmt(s.vendas)}</td></tr>`).join('');
-            } catch (e) { console.error("Erro na Matrix"); }
-            document.getElementById('content').classList.remove('loading');
+                // 2. Renderizando as Últimas 5 Vendas
+                const corpoUltimas = document.querySelector('#tab-ultimas tbody');
+                corpoUltimas.innerHTML = d.ultimas_vendas.map(v => `
+                    <tr>
+                        <td class="badge-hoje">${v['DATA E HORA'].split(' ')[1] || '---'}</td>
+                        <td>${v.SABORES}</td>
+                        <td>${fmt(v['VALOR DA VENDA'])}</td>
+                    </tr>
+                `).join('');
+
+                // 3. Renderizando o Ranking de Sabores (Original)
+                const corpoRanking = document.querySelector('#tab-sabores tbody');
+                corpoRanking.innerHTML = d.ranking_sabores.map(s => `
+                    <tr>
+                        <td>${s.SABORES}</td>
+                        <td><strong>${s.quantidade}</strong></td>
+                        <td>${fmt(s.vendas)}</td>
+                    </tr>
+                `).join('');
+
+            } catch (e) { 
+                console.error("Erro na Matrix: Falha ao sincronizar com o backend."); 
+            } finally {
+                container.classList.remove('loading');
+            }
         }
 
+        // Intervalo de 5 minutos para atualização automática
         setInterval(update, 300000); 
+        
+        // Chamada imediata ao carregar a página
         update();
     </script>
 </body>
