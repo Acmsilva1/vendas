@@ -53,24 +53,25 @@ def processar_dados():
     df_vendas['DATA_DT'] = pd.to_datetime(df_vendas['DATA E HORA'], dayfirst=True, errors='coerce').dt.date
     df_gastos['DATA_DT'] = pd.to_datetime(df_gastos['DATA E HORA'], dayfirst=True, errors='coerce').dt.date
 
+    # --- KPI: Vendas e Itens de Hoje ---
+    df_v_hoje = df_vendas[df_vendas['DATA_DT'] == hoje].copy()
+    v_hoje = df_v_hoje['VALOR DA VENDA'].sum()
+    # Explodimos os sabores de hoje para contar itens reais
+    df_v_hoje['S_SPLIT'] = df_v_hoje['SABORES'].astype(str).str.split(',')
+    itens_hoje = df_v_hoje.explode('S_SPLIT').shape[0] if not df_v_hoje.empty else 0
+
     # --- KPIs Consolidados ---
-    v_hoje = df_vendas[df_vendas['DATA_DT'] == hoje]['VALOR DA VENDA'].sum()
     g_hoje = df_gastos[df_gastos['DATA_DT'] == hoje]['VALOR'].sum()
     v_mes = df_vendas[df_vendas['DATA_DT'] >= inicio_mes]['VALOR DA VENDA'].sum()
     g_mes = df_gastos[df_gastos['DATA_DT'] >= inicio_mes]['VALOR'].sum()
 
-    # --- Lógica de Explosão de Sabores (O Coração do Ajuste) ---
+    # --- Lógica de Explosão de Sabores (Mês) ---
     df_v_mes = df_vendas[df_vendas['DATA_DT'] >= inicio_mes].copy()
-    
-    # Criamos uma lista de sabores separando pela vírgula
     df_v_mes['SABORES_SPLIT'] = df_v_mes['SABORES'].astype(str).str.split(',')
-    
-    # Explodimos a lista (uma linha com 2 sabores vira 2 linhas)
     df_exploded = df_v_mes.explode('SABORES_SPLIT')
     df_exploded['SABORES_SPLIT'] = df_exploded['SABORES_SPLIT'].str.strip().str.upper()
 
-    # Ajuste Proporcional: Se houver 2 sabores, dividimos o valor da venda por 2
-    # para não contar o faturamento em dobro.
+    # Valor Proporcional para não duplicar faturamento no ranking
     df_exploded['ITENS_NA_LINHA'] = df_exploded.groupby(level=0)['SABORES_SPLIT'].transform('count')
     df_exploded['VALOR_PROPORCIONAL'] = df_exploded['VALOR DA VENDA'] / df_exploded['ITENS_NA_LINHA']
 
@@ -90,8 +91,11 @@ def processar_dados():
     ultimas_vendas = df_vendas.sort_values(by='DATA E HORA', ascending=False).head(5).to_dict(orient='records')
 
     resultado = {
-        "vendas_hoje": float(v_hoje), "gastos_hoje": float(g_hoje),
-        "vendas_mes": float(v_mes), "gastos_mes": float(g_mes),
+        "vendas_hoje": float(v_hoje),
+        "itens_hoje": int(itens_hoje),
+        "gastos_hoje": float(g_hoje),
+        "vendas_mes": float(v_mes), 
+        "gastos_mes": float(g_mes),
         "lucro_mes": float(v_mes - g_mes),
         "ranking_sabores": ranking_sabores,
         "ranking_despesas": ranking_despesas,
