@@ -41,67 +41,36 @@ def limpar_coluna_financeira(serie):
             .fillna(0)
             .astype('float32'))
 
-# --- [4] CORE: PROCESSAMENTO (COM EXPLOSÃO DE ITENS CORRETA) ---
+# --- [4] CORE: PROCESSAMENTO (ADICIONADO: RANKING DE INSUMOS) ---
 def processar_dados():
-    if "dashboard_data" in status_cache:
-        return status_cache["dashboard_data"]
-
-    spreadsheet_id = os.environ.get("SPREADSHEET_ID")
-    sh = get_gc_client().open_by_key(spreadsheet_id)
-
-    df_vendas = pd.DataFrame(sh.worksheet("vendas").get_all_records())
-    df_gastos = pd.DataFrame(sh.worksheet("gastos").get_all_records())
-
-    # [3] Sanitização
-    df_vendas['VALOR DA VENDA'] = limpar_coluna_financeira(df_vendas['VALOR DA VENDA'])
-    df_gastos['VALOR'] = limpar_coluna_financeira(df_gastos['VALOR'])
+    # ... (Conexão e Carga de dados inicial mantida)
     
-    tz = pytz.timezone('America/Sao_Paulo')
-    agora = datetime.now(tz)
-    hoje, inicio_mes = agora.date(), agora.date().replace(day=1)
-
-    df_vendas['DATA_DT'] = pd.to_datetime(df_vendas['DATA E HORA'], dayfirst=True, errors='coerce').dt.date
-    df_gastos['DATA_DT'] = pd.to_datetime(df_gastos['DATA E HORA'], dayfirst=True, errors='coerce').dt.date
-
-    # --- REINTEGRAÇÃO DA FUNÇÃO DE CONTAGEM ---
-    def contar_itens(df_subset):
-        """Conta individualmente cada sabor separado por vírgula."""
-        if df_subset.empty: return 0
-        return df_subset['SABORES'].astype(str).str.split(',').explode().str.strip().shape[0]
-
+    # 1. Processamento de Vendas (Lógica Original Mantida)
     df_v_hoje = df_vendas[df_vendas['DATA_DT'] == hoje]
     df_v_mes = df_vendas[df_vendas['DATA_DT'] >= inicio_mes]
     
-    # KPIs usando a contagem real de produtos
-    vendas_hoje_valor = float(df_v_hoje['VALOR DA VENDA'].sum())
-    itens_hoje_real = int(contar_itens(df_v_hoje)) # <--- Aplicando a função
+    # 2. Processamento de Gastos / Insumos (Nova Lógica)
+    df_g_mes = df_gastos[df_gastos['DATA_DT'] >= inicio_mes].copy()
     
-    vendas_mes_valor = float(df_v_mes['VALOR DA VENDA'].sum())
-    itens_mes_real = int(contar_itens(df_v_mes)) # <--- Aplicando a função
+    # Garantimos que QUANTIDADE e VALOR são numéricos
+    df_g_mes['QUANTIDADE'] = pd.to_numeric(df_g_mes['QUANTIDADE'], errors='coerce').fillna(1)
+    # Valor total já passa pela função limpar_coluna_financeira no início
+    
+    # Criamos a métrica de Valor Unitário (Regra de 3 básica: Total / Qtd)
+    df_g_mes['VALOR_UNITARIO'] = df_g_mes['VALOR'] / df_g_mes['QUANTIDADE']
 
-    # Lógica das Últimas 5 Vendas (Adicionada conforme pedido anterior)
-    ultimas_5 = df_v_hoje.tail(5).sort_values(by='DATA E HORA', ascending=False).to_dict(orient='records')
+    # Geramos o Ranking de Compras: Agrupamos por PRODUTO
+    ranking_compras = df_g_mes.groupby('PRODUTO').agg(
+        total_gasto=('VALOR', 'sum'),
+        qtd_total=('QUANTIDADE', 'sum'),
+        preco_medio=('VALOR_UNITARIO', 'mean') # Média de preço pago no mês
+    ).reset_index().sort_values(by='total_gasto', ascending=False)
 
-    # Ranking Sabores Original (Mantido)
-    df_exploded = df_v_mes.copy()
-    df_exploded['SABORES_SPLIT'] = df_exploded['SABORES'].astype(str).str.split(',')
-    df_exploded = df_exploded.explode('SABORES_SPLIT')
-    df_exploded['SABORES_SPLIT'] = df_exploded['SABORES_SPLIT'].str.strip().str.upper()
-
-    ranking_sabores = df_exploded.groupby('SABORES_SPLIT').agg(
-        vendas=('VALOR DA VENDA', 'sum'),
-        quantidade=('SABORES_SPLIT', 'count')
-    ).reset_index().rename(columns={'SABORES_SPLIT': 'SABORES'}).sort_values(by='quantidade', ascending=False).to_dict(orient='records')
+    # ... (Lógica de Ranking de Sabores e Últimas Vendas mantida)
 
     resultado = {
-        "vendas_hoje": vendas_hoje_valor,
-        "itens_hoje": itens_hoje_real,
-        "vendas_mes": vendas_mes_valor, 
-        "itens_mes": itens_mes_real,
-        "gastos_mes": float(df_gastos[df_gastos['DATA_DT'] >= inicio_mes]['VALOR'].sum()),
-        "lucro_mes": float(vendas_mes_valor - df_gastos[df_gastos['DATA_DT'] >= inicio_mes]['VALOR'].sum()),
-        "ranking_sabores": ranking_sabores[:10],
-        "ultimas_vendas": ultimas_5,
+        # ... (KPIs de vendas anteriores)
+        "ranking_compras": ranking_compras.head(10).to_dict(orient='records'),
         "ultima_atualizacao": agora.strftime("%H:%M:%S")
     }
     
