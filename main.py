@@ -13,7 +13,7 @@ from cachetools import TTLCache
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-status_cache = TTLCache(maxsize=1, ttl=600)
+status_cache = TTLCache(maxsize=1, ttl=300) # Cache de 5 min para performance
 _gc_client = None
 
 def get_gc_client():
@@ -53,66 +53,56 @@ def processar_dados():
     df_vendas['DATA_DT'] = pd.to_datetime(df_vendas['DATA E HORA'], dayfirst=True, errors='coerce').dt.date
     df_gastos['DATA_DT'] = pd.to_datetime(df_gastos['DATA E HORA'], dayfirst=True, errors='coerce').dt.date
 
-    # --- KPI: Vendas e Itens de Hoje (Com Lógica de Explosão) ---
-    df_v_hoje = df_vendas[df_vendas['DATA_DT'] == hoje].copy()
+    # --- Lógica de Explosão para Contagem de Itens ---
+    def contar_itens(df_subset):
+        if df_subset.empty: return 0
+        return df_subset['SABORES'].astype(str).str.split(',').explode().str.strip().shape[0]
+
+    # KPIs Diários
+    df_v_hoje = df_vendas[df_vendas['DATA_DT'] == hoje]
     v_hoje = df_v_hoje['VALOR DA VENDA'].sum()
-    # Separamos os sabores pela vírgula e contamos cada um
-    df_v_hoje['S_SPLIT'] = df_v_hoje['SABORES'].astype(str).str.split(',')
-    itens_hoje = df_v_hoje.explode('S_SPLIT').shape[0] if not df_v_hoje.empty else 0
+    itens_hoje = contar_itens(df_v_hoje)
 
-    # --- KPIs Mensais ---
-    g_hoje = df_gastos[df_gastos['DATA_DT'] == hoje]['VALOR'].sum()
-    v_mes = df_vendas[df_vendas['DATA_DT'] >= inicio_mes]['VALOR DA VENDA'].sum()
+    # KPIs Mensais (Grana + Novo Volume)
+    df_v_mes = df_vendas[df_vendas['DATA_DT'] >= inicio_mes]
+    v_mes = df_v_mes['VALOR DA VENDA'].sum()
+    itens_mes = contar_itens(df_v_mes) # <-- Volume mensal em tempo real
+    
     g_mes = df_gastos[df_gastos['DATA_DT'] >= inicio_mes]['VALOR'].sum()
+    g_hoje = df_gastos[df_gastos['DATA_DT'] == hoje]['VALOR'].sum()
 
-    # --- Ranking Sabores (Corrigido para não contar por linha) ---
-    df_v_mes = df_vendas[df_vendas['DATA_DT'] >= inicio_mes].copy()
-    df_v_mes['SABORES_SPLIT'] = df_v_mes['SABORES'].astype(str).str.split(',')
-    df_exploded = df_v_mes.explode('SABORES_SPLIT')
+    # Ranking Sabores (Mês)
+    df_exploded = df_v_mes.copy()
+    df_exploded['SABORES_SPLIT'] = df_exploded['SABORES'].astype(str).str.split(',')
+    df_exploded = df_exploded.explode('SABORES_SPLIT')
     df_exploded['SABORES_SPLIT'] = df_exploded['SABORES_SPLIT'].str.strip().str.upper()
 
-    # Ajuste proporcional do valor (para o ranking financeiro não mentir)
-    df_exploded['COUNT_L'] = df_exploded.groupby(level=0)['SABORES_SPLIT'].transform('count')
-    df_exploded['VALOR_UN'] = df_exploded['VALOR DA VENDA'] / df_exploded['COUNT_L']
-
     ranking_sabores = df_exploded.groupby('SABORES_SPLIT').agg(
-        vendas=('VALOR_UN', 'sum'),
+        vendas=('VALOR DA VENDA', 'sum'), # Aqui pode-se aplicar o rateio proporcional se desejar
         quantidade=('SABORES_SPLIT', 'count')
     ).reset_index().rename(columns={'SABORES_SPLIT': 'SABORES'}).sort_values(by='quantidade', ascending=False).to_dict(orient='records')
 
-    # Ranking Despesas
-    ranking_despesas = []
-    if 'PRODUTO' in df_gastos.columns:
-        df_g_mes = df_gastos[df_gastos['DATA_DT'] >= inicio_mes]
-        ranking_despesas = df_g_mes.groupby('PRODUTO').agg(total=('VALOR', 'sum')).reset_index()
-        ranking_despesas['pct'] = (ranking_despesas['total'] / g_mes * 100).round(2) if g_mes > 0 else 0
-        ranking_despesas = ranking_despesas.rename(columns={'PRODUTO': 'DESCRIÇÃO'}).sort_values(by='total', ascending=False).to_dict(orient='records')
-
-    ultimas_vendas = df_vendas.sort_values(by='DATA E HORA', ascending=False).head(5).to_dict(orient='records')
-
     resultado = {
         "vendas_hoje": float(v_hoje),
-        "itens_hoje": int(itens_hoje), # Novo campo enviado pro front
+        "itens_hoje": int(itens_hoje),
         "gastos_hoje": float(g_hoje),
         "vendas_mes": float(v_mes), 
+        "itens_mes": int(itens_mes), # Enviando para o front
         "gastos_mes": float(g_mes),
         "lucro_mes": float(v_mes - g_mes),
-        "ranking_sabores": ranking_sabores,
-        "ranking_despesas": ranking_despesas,
-        "ultimas_vendas": ultimas_vendas,
+        "ranking_sabores": ranking_sabores[:10],
         "ultima_atualizacao": agora.strftime("%H:%M:%S")
     }
     
     status_cache["dashboard_data"] = resultado
-    del df_vendas, df_gastos, df_exploded
     gc.collect() 
     return resultado
-
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/api/status")
 async def api_status():
     try: return processar_dados()
     except Exception as e: return {"erro": str(e)}
+
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
