@@ -5,120 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vendas Diária</title>
     <style>
-        :root { 
-            --bg: #0a0a0a; 
-            --card: #111; 
-            --border: #333; 
-            --accent: #3498db; 
-            --green: #2ecc71; 
-            --red: #e74c3c; 
-            --yellow: #f1c40f; 
-        }
-
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: var(--bg); 
-            color: #eee; 
-            margin: 0; 
-            padding: 20px; 
-            line-height: 1.6;
-        }
-
-        .header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            border-bottom: 1px solid var(--border); 
-            padding-bottom: 10px; 
-            margin-bottom: 20px; 
-        }
-
-        h1 { margin: 0; font-weight: 300; }
-        
-        /* Grid de KPIs - Onde o dinheiro (ou a falta dele) aparece */
-        .grid-main { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-            gap: 15px; 
-            margin-bottom: 30px; 
-        }
-
-        .card { 
-            background: var(--card); 
-            border-top: 4px solid var(--accent); 
-            padding: 15px; 
-            border-radius: 4px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-
-        .valor { 
-            font-size: 1.8rem; 
-            font-weight: bold; 
-            margin-top: 8px; 
-            letter-spacing: -1px;
-        }
-
-        /* Container das Tabelas - Agora com scroll para não quebrar o layout */
-        .tables-container { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
-            gap: 20px; 
-        }
-
-        .table-wrapper {
-            background: var(--card);
-            padding: 15px;
-            border-radius: 4px;
-            border: 1px solid var(--border);
-            max-height: 450px;
-            overflow-y: auto;
-        }
-
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            font-size: 0.85rem; 
-        }
-
-        th, td { 
-            padding: 12px 10px; 
-            text-align: left; 
-            border-bottom: 1px solid var(--border); 
-        }
-
-        th { 
-            color: var(--accent); 
-            text-transform: uppercase; 
-            font-size: 0.7rem; 
-            position: sticky;
-            top: 0;
-            background: var(--card);
-        }
-
-        /* Deixa os sabores bonitinhos em vez de TUDO GRITANDO */
+        :root { --bg: #0a0a0a; --card: #111; --border: #333; --accent: #3498db; --green: #2ecc71; --red: #e74c3c; --yellow: #f1c40f; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #eee; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
+        .grid-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .card { background: var(--card); border-top: 4px solid var(--accent); padding: 15px; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .valor { font-size: 1.7rem; font-weight: bold; margin-top: 8px; }
+        .sub-valor { font-size: 0.9rem; color: var(--accent); font-weight: 500; }
+        .tables-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+        .table-wrapper { background: var(--card); padding: 15px; border-radius: 4px; border: 1px solid var(--border); max-height: 450px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { color: var(--accent); text-transform: uppercase; font-size: 0.7rem; position: sticky; top: 0; background: var(--card); }
         .capitalize { text-transform: capitalize; }
-
-        .row-outlier { 
-            background: rgba(231, 76, 60, 0.1) !important; 
-            border-left: 4px solid var(--red); 
-        }
-
-        .loading { filter: blur(2px); pointer-events: none; transition: 0.3s; }
-
-        /* Scrollbar customizada para não parecer o Windows 95 */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        .row-outlier { background: rgba(231, 76, 60, 0.1) !important; border-left: 4px solid var(--red); }
+        .loading { opacity: 0.3; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Vendas<small style="font-size: 12px; color: var(--accent); margin-left: 10px;">📊 DATA_INTELLIGENCE</small></h1>
+        <h1>Vendas<small style="font-size: 12px; color: var(--accent); margin-left:10px;">PRODUTIVIDADE</small></h1>
         <p>UPDATE: <span id="time" style="color:var(--yellow)">--:--:--</span></p>
     </div>
 
     <div id="content">
         <div class="grid-main">
-            <div class="card" style="border-top-color: var(--accent);"><h3>Vendas Hoje</h3><div class="valor" id="v_hoje">R$ 0,00</div></div>
+            <div class="card" style="border-top-color: var(--accent);">
+                <h3>Vendas Hoje</h3>
+                <div class="valor" id="v_hoje">R$ 0,00</div>
+                <div class="sub-valor" id="i_hoje">0 itens vendidos</div>
+            </div>
             <div class="card" style="border-top-color: var(--red);"><h3>Gastos Hoje</h3><div class="valor" id="g_hoje">R$ 0,00</div></div>
             <div class="card"><h3>Vendas Mês</h3><div class="valor" id="v_mes">R$ 0,00</div></div>
             <div class="card" style="border-top-color: #e67e22;"><h3>Gastos Mês</h3><div class="valor" id="g_mes">R$ 0,00</div></div>
@@ -127,105 +43,53 @@
 
         <div class="tables-container">
             <div class="table-wrapper">
-                <h3>🍰 RANKING DE SABORES</h3>
-                <table id="tab-sabores">
-                    <thead><tr><th>Sabor</th><th>Qtd</th><th>Total</th></tr></thead>
-                    <tbody></tbody>
-                </table>
+                <h3>🍰 PRODUTOS (RANKING)</h3>
+                <table id="tab-sabores"><thead><tr><th>Sabor</th><th>Qtd</th><th>Total</th></tr></thead><tbody></tbody></table>
             </div>
-
             <div class="table-wrapper">
-                <h3 style="color: var(--red);">💸 GASTOS (OUTLIERS > 20%)</h3>
-                <table id="tab-despesas">
-                    <thead><tr><th>Descrição</th><th>Total</th><th>%</th></tr></thead>
-                    <tbody></tbody>
-                </table>
+                <h3 style="color: var(--red);">💸 GASTOS (OUTLIERS)</h3>
+                <table id="tab-despesas"><thead><tr><th>Descrição</th><th>Total</th><th>%</th></tr></thead><tbody></tbody></table>
             </div>
-
             <div class="table-wrapper">
                 <h3>🕒 ÚLTIMOS LANÇAMENTOS</h3>
-                <table id="tab-vendas">
-                    <thead><tr><th>Data/Hora</th><th>Sabor</th><th>Valor</th></tr></thead>
-                    <tbody></tbody>
-                </table>
+                <table id="tab-vendas"><thead><tr><th>Data/Hora</th><th>Sabor</th><th>Valor</th></tr></thead><tbody></tbody></table>
             </div>
         </div>
     </div>
 
     <script>
-        // Força o formato PT-BR para não termos pontos onde deveriam ser vírgulas
-        const fmt = (v) => {
-            return new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL',
-            }).format(v || 0);
-        };
+        const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
         
         async function update() {
             if (document.hidden) return; 
-            
-            const content = document.getElementById('content');
-            content.classList.add('loading');
-
+            document.getElementById('content').classList.add('loading');
             try {
-                // Aqui é onde a mágica acontece. O Python limpa, o JS exibe.
                 const res = await fetch('/api/status');
                 const d = await res.json();
                 
-                if (d.erro) throw new Error(d.erro);
-
-                // Atualiza KPIs
                 document.getElementById('v_hoje').innerText = fmt(d.vendas_hoje);
+                document.getElementById('i_hoje').innerText = `${d.itens_hoje} produtos vendidos`;
                 document.getElementById('g_hoje').innerText = fmt(d.gastos_hoje);
                 document.getElementById('v_mes').innerText = fmt(d.vendas_mes);
                 document.getElementById('g_mes').innerText = fmt(d.gastos_mes);
                 document.getElementById('lucro').innerText = fmt(d.lucro_mes);
                 document.getElementById('time').innerText = d.ultima_atualizacao;
                 
-                // Popula Ranking de Sabores (agora explodidos e limpos)
-                const tbodySabores = document.querySelector('#tab-sabores tbody');
-                tbodySabores.innerHTML = d.ranking_sabores.map(s => `
-                    <tr>
-                        <td class="capitalize">${s.SABORES.toLowerCase()}</td>
-                        <td>${s.quantidade}</td>
-                        <td style="color: var(--accent); font-weight: bold;">${fmt(s.vendas)}</td>
-                    </tr>
-                `).join('');
+                document.querySelector('#tab-sabores tbody').innerHTML = d.ranking_sabores.map(s => 
+                    `<tr><td class="capitalize">${s.SABORES.toLowerCase()}</td><td>${s.quantidade}</td><td>${fmt(s.vendas)}</td></tr>`).join('');
                 
-                // Popula Gastos
-                document.querySelector('#tab-despesas tbody').innerHTML = d.ranking_despesas.map(g => `
-                    <tr class="${g.pct > 20 ? 'row-outlier' : ''}">
-                        <td class="capitalize">${g.DESCRIÇÃO.toLowerCase()}</td>
-                        <td>${fmt(g.total)}</td>
-                        <td>${g.pct}%</td>
-                    </tr>
-                `).join('');
+                document.querySelector('#tab-despesas tbody').innerHTML = d.ranking_despesas.map(g => 
+                    `<tr class="${g.pct > 20 ? 'row-outlier' : ''}"><td class="capitalize">${g.DESCRIÇÃO.toLowerCase()}</td><td>${fmt(g.total)}</td><td>${g.pct}%</td></tr>`).join('');
                 
-                // Últimas Vendas
-                document.querySelector('#tab-vendas tbody').innerHTML = d.ultimas_vendas.map(v => `
-                    <tr>
-                        <td>${v['DATA E HORA']}</td>
-                        <td class="capitalize">${v.SABORES.toLowerCase()}</td>
-                        <td style="color:var(--green)">${fmt(v['VALOR DA VENDA'])}</td>
-                    </tr>
-                `).join('');
-
-            } catch (e) { 
-                console.error("Erro na Matrix:", e);
-                document.getElementById('time').innerText = "ERRO";
-            } finally {
-                content.classList.remove('loading');
-            }
+                document.querySelector('#tab-vendas tbody').innerHTML = d.ultimas_vendas.map(v => 
+                    `<tr><td>${v['DATA E HORA']}</td><td class="capitalize">${v.SABORES.toLowerCase()}</td><td style="color:var(--green)">${fmt(v['VALOR DA VENDA'])}</td></tr>`).join('');
+            } catch (e) { console.error("Erro na atualização"); }
+            document.getElementById('content').classList.remove('loading');
         }
 
-        // Atualiza a cada 5 minutos (300.000ms) para não estourar a cota do Google
         setInterval(update, 300000); 
         update();
-
-        // Se o André voltar para a aba, atualiza na hora
-        document.addEventListener("visibilitychange", () => { 
-            if (!document.hidden) update(); 
-        });
+        document.addEventListener("visibilitychange", () => { if (!document.hidden) update(); });
     </script>
 </body>
 </html>
