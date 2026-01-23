@@ -2,61 +2,23 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendas Diária | Dashboard de TI</title>
+    <title>Vendas Diária | Dashboard André</title>
     <style>
-        /* --- [7] UI E ESTILIZAÇÃO (DESIGN SYSTEM) --- */
-        :root { 
-            --bg: #0a0a0a; --card: #111; --border: #333; 
-            --accent: #3498db; --green: #2ecc71; --red: #e74c3c; --yellow: #f1c40f; 
-        }
-        
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: var(--bg); color: #eee; margin: 0; padding: 20px; 
-        }
-
-        .header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; 
-        }
-
-        /* Layout Grid para KPIs Superiores */
-        .grid-main { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px; 
-        }
-
-        /* Layout para as Tabelas Inferiores */
-        .grid-tables {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
-        }
-
-        /* Estilo dos Cards */
-        .card { 
-            background: var(--card); border-top: 4px solid var(--accent); 
-            padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-        
-        .valor { font-size: 1.8rem; font-weight: bold; margin-top: 10px; }
-        .sub-valor { font-size: 0.9rem; color: var(--accent); margin-top: 5px; font-weight: 500; }
-
-        /* Tabelas */
-        .table-container { margin-top: 15px; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 8px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
-        th { color: var(--accent); text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1px; }
-        
-        /* Feedback Visual de Carregamento */
-        .loading { opacity: 0.4; transition: opacity 0.3s; }
-
-        /* Responsividade para telas pequenas */
-        @media (max-width: 900px) {
-            .grid-tables { grid-template-columns: 1fr; }
-        }
+        :root { --bg: #0a0a0a; --card: #111; --border: #333; --accent: #3498db; --green: #2ecc71; --red: #e74c3c; --yellow: #f1c40f; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #eee; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
+        .grid-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .card { background: var(--card); border-top: 4px solid var(--accent); padding: 15px; border-radius: 4px; }
+        .valor { font-size: 1.6rem; font-weight: bold; margin-top: 8px; }
+        .sub-valor { font-size: 0.85rem; color: var(--accent); margin-top: 4px; font-weight: 500; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { color: var(--accent); text-transform: uppercase; font-size: 0.7rem; }
+        .grid-tables { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+        @media (max-width: 900px) { .grid-tables { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
-
     <div class="header">
         <h1>Dashboard <small style="font-size: 14px; color: var(--accent);">GESTOR IA & DADOS</small></h1>
         <p>🕒 Sincronizado: <span id="time" style="color:var(--yellow)">--:--:--</span></p>
@@ -69,18 +31,15 @@
                 <div class="valor" id="v_hoje">R$ 0,00</div>
                 <div class="sub-valor" id="i_hoje">0 itens hoje</div>
             </div>
-            
             <div class="card" style="border-top-color: var(--green);">
                 <h3>Faturamento Mês</h3>
                 <div class="valor" id="v_mes">R$ 0,00</div>
-                <div class="sub-valor" id="i_mes" style="color: var(--green);">0 itens no mês</div> 
+                <div class="sub-valor" id="i_mes" style="color: var(--green);">0 itens no mês</div>
             </div>
-
             <div class="card" style="border-top-color: var(--red);">
                 <h3>Gastos Mês</h3>
                 <div class="valor" id="g_mes">R$ 0,00</div>
             </div>
-
             <div class="card" style="border-top-color: var(--yellow);">
                 <h3>Lucro Previsto</h3>
                 <div class="valor" id="lucro">R$ 0,00</div>
@@ -90,57 +49,37 @@
         <div class="grid-tables">
             <div class="card" style="border-top-color: var(--yellow);">
                 <h3>🕒 Últimas 5 Vendas (Hoje)</h3>
-                <div class="table-container">
-                    <table id="tab-ultimas">
-                        <thead>
-                            <tr><th>Hora</th><th>Produto</th><th>Valor</th></tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
+                <table>
+                    <thead><tr><th>Hora</th><th>Produto</th><th>Valor</th></tr></thead>
+                    <tbody id="corpo-ultimas"></tbody>
+                </table>
             </div>
-
             <div class="card" style="border-top-color: var(--red);">
                 <h3>🛒 Ranking de Insumos (Mês)</h3>
-                <div class="table-container">
-                    <table id="tab-compras">
-                        <thead>
-                            <tr><th>Item</th><th>Qtd</th><th>Preço Méd.</th><th>Total</th></tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
+                <table>
+                    <thead><tr><th>Item</th><th>Qtd</th><th>Total</th></tr></thead>
+                    <tbody id="corpo-compras"></tbody>
+                </table>
             </div>
         </div>
 
-        <div class="card" style="margin-top: 25px; border-top-color: var(--accent);">
+        <div class="card" style="margin-top: 20px; border-top-color: var(--accent);">
             <h3>📊 TOP 10 Sabores Vendidos (Mês)</h3>
-            <div class="table-container">
-                <table id="tab-sabores">
-                    <thead>
-                        <tr><th>Sabor</th><th>Qtd</th><th>Faturamento</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+            <table>
+                <thead><tr><th>Sabor</th><th>Qtd</th><th>Faturamento</th></tr></thead>
+                <tbody id="corpo-sabores"></tbody>
+            </table>
         </div>
     </div>
 
     <script>
-        /* --- [8] JS: UPDATE (CONSUMO DA API) --- */
-        
-        // Formatador de Moeda
         const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
         
         async function update() {
-            const container = document.getElementById('content');
-            container.classList.add('loading');
-
             try {
                 const res = await fetch('/api/status');
                 const d = await res.json();
                 
-                // 1. Atualizando Cards Principais
                 document.getElementById('v_hoje').innerText = fmt(d.vendas_hoje);
                 document.getElementById('i_hoje').innerText = `${d.itens_hoje} itens hoje`;
                 document.getElementById('v_mes').innerText = fmt(d.vendas_mes);
@@ -149,44 +88,18 @@
                 document.getElementById('lucro').innerText = fmt(d.lucro_mes);
                 document.getElementById('time').innerText = d.ultima_atualizacao;
                 
-                // 2. Renderizando Tabela: Últimas 5 Vendas
-                document.querySelector('#tab-ultimas tbody').innerHTML = d.ultimas_vendas.map(v => `
-                    <tr>
-                        <td style="color:var(--yellow)">${v['DATA E HORA'].split(' ')[1] || '---'}</td>
-                        <td>${v.SABORES}</td>
-                        <td>${fmt(v['VALOR DA VENDA'])}</td>
-                    </tr>
-                `).join('');
+                document.getElementById('corpo-ultimas').innerHTML = d.ultimas_vendas.map(v => 
+                    `<tr><td>${v['DATA E HORA'].split(' ')[1] || '---'}</td><td>${v.SABORES}</td><td>${fmt(v['VALOR DA VENDA'])}</td></tr>`).join('');
 
-                // 3. Renderizando Tabela: Ranking de Compras (Insumos)
-                document.querySelector('#tab-compras tbody').innerHTML = d.ranking_compras.map(c => `
-                    <tr>
-                        <td><strong>${c.PRODUTO}</strong></td>
-                        <td>${c.qtd_total}</td>
-                        <td style="color:var(--yellow)">${fmt(c.preco_medio)}</td>
-                        <td>${fmt(c.total_gasto)}</td>
-                    </tr>
-                `).join('');
+                document.getElementById('corpo-compras').innerHTML = d.ranking_compras.map(c => 
+                    `<tr><td>${c.PRODUTO}</td><td>${c.qtd_total}</td><td>${fmt(c.total_gasto)}</td></tr>`).join('');
 
-                // 4. Renderizando Tabela: Ranking de Sabores (Original)
-                document.querySelector('#tab-sabores tbody').innerHTML = d.ranking_sabores.map(s => `
-                    <tr>
-                        <td>${s.SABORES}</td>
-                        <td><strong>${s.quantidade}</strong></td>
-                        <td>${fmt(s.vendas)}</td>
-                    </tr>
-                `).join('');
-
-            } catch (e) { 
-                console.error("Erro na Matrix: O Backend sumiu!"); 
-            } finally {
-                container.classList.remove('loading');
-            }
+                document.getElementById('corpo-sabores').innerHTML = d.ranking_sabores.map(s => 
+                    `<tr><td>${s.SABORES}</td><td>${s.quantidade}</td><td>${fmt(s.vendas)}</td></tr>`).join('');
+            } catch (e) { console.error("Erro na Matrix"); }
         }
-
-        // Loop de atualização (5 minutos)
-        setInterval(update, 300000); 
-        update(); // Carga inicial
+        setInterval(update, 300000);
+        update();
     </script>
 </body>
 </html>
