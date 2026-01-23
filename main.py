@@ -53,30 +53,30 @@ def processar_dados():
     df_vendas['DATA_DT'] = pd.to_datetime(df_vendas['DATA E HORA'], dayfirst=True, errors='coerce').dt.date
     df_gastos['DATA_DT'] = pd.to_datetime(df_gastos['DATA E HORA'], dayfirst=True, errors='coerce').dt.date
 
-    # --- KPI: Vendas e Itens de Hoje ---
+    # --- KPI: Vendas e Itens de Hoje (Com Lógica de Explosão) ---
     df_v_hoje = df_vendas[df_vendas['DATA_DT'] == hoje].copy()
     v_hoje = df_v_hoje['VALOR DA VENDA'].sum()
-    # Explodimos os sabores de hoje para contar itens reais
+    # Separamos os sabores pela vírgula e contamos cada um
     df_v_hoje['S_SPLIT'] = df_v_hoje['SABORES'].astype(str).str.split(',')
     itens_hoje = df_v_hoje.explode('S_SPLIT').shape[0] if not df_v_hoje.empty else 0
 
-    # --- KPIs Consolidados ---
+    # --- KPIs Mensais ---
     g_hoje = df_gastos[df_gastos['DATA_DT'] == hoje]['VALOR'].sum()
     v_mes = df_vendas[df_vendas['DATA_DT'] >= inicio_mes]['VALOR DA VENDA'].sum()
     g_mes = df_gastos[df_gastos['DATA_DT'] >= inicio_mes]['VALOR'].sum()
 
-    # --- Lógica de Explosão de Sabores (Mês) ---
+    # --- Ranking Sabores (Corrigido para não contar por linha) ---
     df_v_mes = df_vendas[df_vendas['DATA_DT'] >= inicio_mes].copy()
     df_v_mes['SABORES_SPLIT'] = df_v_mes['SABORES'].astype(str).str.split(',')
     df_exploded = df_v_mes.explode('SABORES_SPLIT')
     df_exploded['SABORES_SPLIT'] = df_exploded['SABORES_SPLIT'].str.strip().str.upper()
 
-    # Valor Proporcional para não duplicar faturamento no ranking
-    df_exploded['ITENS_NA_LINHA'] = df_exploded.groupby(level=0)['SABORES_SPLIT'].transform('count')
-    df_exploded['VALOR_PROPORCIONAL'] = df_exploded['VALOR DA VENDA'] / df_exploded['ITENS_NA_LINHA']
+    # Ajuste proporcional do valor (para o ranking financeiro não mentir)
+    df_exploded['COUNT_L'] = df_exploded.groupby(level=0)['SABORES_SPLIT'].transform('count')
+    df_exploded['VALOR_UN'] = df_exploded['VALOR DA VENDA'] / df_exploded['COUNT_L']
 
     ranking_sabores = df_exploded.groupby('SABORES_SPLIT').agg(
-        vendas=('VALOR_PROPORCIONAL', 'sum'),
+        vendas=('VALOR_UN', 'sum'),
         quantidade=('SABORES_SPLIT', 'count')
     ).reset_index().rename(columns={'SABORES_SPLIT': 'SABORES'}).sort_values(by='quantidade', ascending=False).to_dict(orient='records')
 
@@ -92,7 +92,7 @@ def processar_dados():
 
     resultado = {
         "vendas_hoje": float(v_hoje),
-        "itens_hoje": int(itens_hoje),
+        "itens_hoje": int(itens_hoje), # Novo campo enviado pro front
         "gastos_hoje": float(g_hoje),
         "vendas_mes": float(v_mes), 
         "gastos_mes": float(g_mes),
