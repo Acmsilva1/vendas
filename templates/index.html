@@ -39,6 +39,7 @@
             <div class="card" style="border-top-color: var(--red);">
                 <h3>Gastos Mês</h3>
                 <div class="valor" id="g_mes">R$ 0,00</div>
+                <div class="sub-valor" id="g_hoje" style="color: var(--red);">Hoje: R$ 0,00 (0 itens)</div>
             </div>
             <div class="card" style="border-top-color: var(--yellow);">
                 <h3>Lucro Previsto</h3>
@@ -80,11 +81,16 @@
                 const res = await fetch('/api/status');
                 const d = await res.json();
                 
+                // Mapeamento dos dados do Backend para o HTML
                 document.getElementById('v_hoje').innerText = fmt(d.vendas_hoje);
                 document.getElementById('i_hoje').innerText = `${d.itens_hoje} itens hoje`;
                 document.getElementById('v_mes').innerText = fmt(d.vendas_mes);
                 document.getElementById('i_mes').innerText = `${d.itens_mes} itens no mês`;
                 document.getElementById('g_mes').innerText = fmt(d.gastos_mes);
+                
+                // INJEÇÃO DOS NOVOS DADOS DE GASTOS DIÁRIOS
+                document.getElementById('g_hoje').innerText = `Hoje: ${fmt(d.gastos_hoje)} (${d.itens_gastos_hoje} itens)`;
+                
                 document.getElementById('lucro').innerText = fmt(d.lucro_mes);
                 document.getElementById('time').innerText = d.ultima_atualizacao;
                 
@@ -96,8 +102,9 @@
 
                 document.getElementById('corpo-sabores').innerHTML = d.ranking_sabores.map(s => 
                     `<tr><td>${s.SABORES}</td><td>${s.quantidade}</td><td>${fmt(s.vendas)}</td></tr>`).join('');
-            } catch (e) { console.error("Erro na Matrix"); }
+            } catch (e) { console.error("Erro na Matrix: ", e); }
         }
+        // Atualiza a cada 5 minutos (mesmo tempo do cache do backend)
         setInterval(update, 300000);
         update();
     </script>
