@@ -42,17 +42,20 @@ def limpar_coluna_financeira(serie):
             .astype('float32'))
 
 # --- [4] CORE: PROCESSAMENTO (RANKING DE INSUMOS + ÚLTIMAS VENDAS) ---
+# --- [DENTRO DA FUNÇÃO processar_dados] ---
+
 def processar_dados():
     if "dashboard_data" in status_cache:
         return status_cache["dashboard_data"]
 
+    # ... (mantenha a lógica de conexão e carregamento inicial igual)
     spreadsheet_id = os.environ.get("SPREADSHEET_ID")
     sh = get_gc_client().open_by_key(spreadsheet_id)
 
     df_vendas = pd.DataFrame(sh.worksheet("vendas").get_all_records())
     df_gastos = pd.DataFrame(sh.worksheet("gastos").get_all_records())
 
-    # [3] Sanitização original
+    # Sanitização (Garantindo que os dados não venham "sujos" da planilha)
     df_vendas['VALOR DA VENDA'] = limpar_coluna_financeira(df_vendas['VALOR DA VENDA'])
     df_gastos['VALOR'] = limpar_coluna_financeira(df_gastos['VALOR'])
     
@@ -63,34 +66,23 @@ def processar_dados():
     df_vendas['DATA_DT'] = pd.to_datetime(df_vendas['DATA E HORA'], dayfirst=True, errors='coerce').dt.date
     df_gastos['DATA_DT'] = pd.to_datetime(df_gastos['DATA E HORA'], dayfirst=True, errors='coerce').dt.date
 
-    # --- ÚLTIMAS 5 VENDAS (HOJE) ---
+    # --- CÁLCULOS DO DIA (VENDAS) ---
     df_v_hoje = df_vendas[df_vendas['DATA_DT'] == hoje]
-    ultimas_5 = df_v_hoje.tail(5).sort_values(by='DATA E HORA', ascending=False).to_dict(orient='records')
-
-    # --- RANKING DE INSUMOS (SEM PREÇO MÉDIO) ---
-    df_g_mes = df_gastos[df_gastos['DATA_DT'] >= inicio_mes].copy()
-    df_g_mes['QUANTIDADE'] = pd.to_numeric(df_g_mes['QUANTIDADE'], errors='coerce').fillna(1)
     
-    ranking_compras = df_g_mes.groupby('PRODUTO').agg(
-        total_gasto=('VALOR', 'sum'),
-        qtd_total=('QUANTIDADE', 'sum')
-    ).reset_index().sort_values(by='total_gasto', ascending=False).head(10).to_dict(orient='records')
+    # --- NOVO: CÁLCULOS DO DIA (GASTOS) ---
+    df_g_hoje = df_gastos[df_gastos['DATA_DT'] == hoje]
 
-    # --- RANKING SABORES (MÊS) ---
-    df_v_mes = df_vendas[df_vendas['DATA_DT'] >= inicio_mes]
-    df_exploded = df_v_mes.copy()
-    df_exploded['SABORES_SPLIT'] = df_exploded['SABORES'].astype(str).str.split(',')
-    df_exploded = df_exploded.explode('SABORES_SPLIT')
-    df_exploded['SABORES_SPLIT'] = df_exploded['SABORES_SPLIT'].str.strip().str.upper()
+    # ... (mantenha os rankings de sabores e compras iguais)
 
-    ranking_sabores = df_exploded.groupby('SABORES_SPLIT').agg(
-        vendas=('VALOR DA VENDA', 'sum'),
-        quantidade=('SABORES_SPLIT', 'count')
-    ).reset_index().rename(columns={'SABORES_SPLIT': 'SABORES'}).sort_values(by='quantidade', ascending=False).to_dict(orient='records')
-
+    # --- MONTAGEM DO RESULTADO ---
     resultado = {
         "vendas_hoje": float(df_v_hoje['VALOR DA VENDA'].sum()),
         "itens_hoje": int(df_v_hoje['SABORES'].astype(str).str.split(',').explode().shape[0]) if not df_v_hoje.empty else 0,
+        
+        # Aqui está o que você pediu:
+        "gastos_hoje": float(df_g_hoje['VALOR'].sum()),
+        "itens_gastos_hoje": int(df_g_hoje.shape[0]),
+        
         "vendas_mes": float(df_v_mes['VALOR DA VENDA'].sum()), 
         "itens_mes": int(df_exploded.shape[0]),
         "gastos_mes": float(df_g_mes['VALOR'].sum()),
