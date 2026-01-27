@@ -45,15 +45,18 @@ def limpar_coluna_financeira(serie):
 # --- [DENTRO DA FUNÇÃO processar_dados] ---
 
 def processar_dados():
+    # Se houver erro de nomes, limpamos o cache para forçar atualização
     if "dashboard_data" in status_cache:
         return status_cache["dashboard_data"]
 
     spreadsheet_id = os.environ.get("SPREADSHEET_ID")
     sh = get_gc_client().open_by_key(spreadsheet_id)
 
+    # Carregamento seguro
     df_vendas = pd.DataFrame(sh.worksheet("vendas").get_all_records())
     df_gastos = pd.DataFrame(sh.worksheet("gastos").get_all_records())
 
+    # Sanitização
     df_vendas['VALOR DA VENDA'] = limpar_coluna_financeira(df_vendas['VALOR DA VENDA'])
     df_gastos['VALOR'] = limpar_coluna_financeira(df_gastos['VALOR'])
     
@@ -64,31 +67,46 @@ def processar_dados():
     df_vendas['DATA_DT'] = pd.to_datetime(df_vendas['DATA E HORA'], dayfirst=True, errors='coerce').dt.date
     df_gastos['DATA_DT'] = pd.to_datetime(df_gastos['DATA E HORA'], dayfirst=True, errors='coerce').dt.date
 
-    # --- PROCESSAMENTO GASTOS ---
+    # --- CÁLCULOS GASTOS ---
     df_g_mes = df_gastos[df_gastos['DATA_DT'] >= inicio_mes].copy()
-    df_g_hoje = df_gastos[df_gastos['DATA_DT'] == hoje] # <--- AQUI: Filtro de hoje
-
-    # --- PROCESSAMENTO VENDAS ---
+    df_g_hoje = df_gastos[df_gastos['DATA_DT'] == hoje]
+    
+    # --- CÁLCULOS VENDAS ---
     df_v_hoje = df_vendas[df_vendas['DATA_DT'] == hoje]
     df_v_mes = df_vendas[df_vendas['DATA_DT'] >= inicio_mes]
-    
-    # ... (mantenha os rankings de sabores e insumos como estão no seu código original)
 
+    # --- RANKINGS (Garantindo que não fiquem vazios) ---
+    ultimas_5 = df_v_hoje.tail(5).sort_values(by='DATA E HORA', ascending=False).to_dict(orient='records')
+    
+    ranking_compras = df_g_mes.groupby('PRODUTO').agg(
+        total_gasto=('VALOR', 'sum'),
+        qtd_total=('QUANTIDADE', 'sum')
+    ).reset_index().sort_values(by='total_gasto', ascending=False).head(10).to_dict(orient='records')
+
+    # Ranking Sabores
+    df_exploded = df_v_mes.copy()
+    df_exploded['SABORES_SPLIT'] = df_exploded['SABORES'].astype(str).str.split(',')
+    df_exploded = df_exploded.explode('SABORES_SPLIT')
+    df_exploded['SABORES_SPLIT'] = df_exploded['SABORES_SPLIT'].str.strip().str.upper()
+    
+    ranking_sabores = df_exploded.groupby('SABORES_SPLIT').agg(
+        vendas=('VALOR DA VENDA', 'sum'),
+        quantidade=('SABORES_SPLIT', 'count')
+    ).reset_index().rename(columns={'SABORES_SPLIT': 'SABORES'}).sort_values(by='quantidade', ascending=False).head(10).to_dict(orient='records')
+
+    # RESPOSTA PADRONIZADA (Match com seu index.html)
     resultado = {
         "vendas_hoje": float(df_v_hoje['VALOR DA VENDA'].sum()),
-        "itens_hoje": int(df_v_hoje.shape[0]),
-        
-        "gastos_hoje": float(df_g_hoje['VALOR'].sum()), # <--- AQUI: Chave necessária para o index.html
-        "itens_gastos_hoje": int(df_g_hoje.shape[0]),   # <--- AQUI: Chave necessária para o index.html
-        
+        "itens_hoje": int(len(df_v_hoje)),
+        "gastos_hoje": float(df_g_hoje['VALOR'].sum()),
+        "itens_gastos_hoje": int(len(df_g_hoje)),
         "vendas_mes": float(df_v_mes['VALOR DA VENDA'].sum()), 
-        "itens_mes": int(df_v_mes.shape[0]), # <--- AQUI: Corrigindo o undefined de itens no mês
+        "itens_mes": int(len(df_v_mes)),
         "gastos_mes": float(df_g_mes['VALOR'].sum()),
         "lucro_mes": float(df_v_mes['VALOR DA VENDA'].sum() - df_g_mes['VALOR'].sum()),
-        
-        "ranking_sabores": ranking_sabores if 'ranking_sabores' in locals() else [],
-        "ultimas_vendas": ultimas_5 if 'ultimas_5' in locals() else [],
-        "ranking_compras": ranking_compras if 'ranking_compras' in locals() else [],
+        "ranking_sabores": ranking_sabores,
+        "ultimas_vendas": ultimas_5,
+        "ranking_compras": ranking_compras,
         "ultima_atualizacao": agora.strftime("%H:%M:%S")
     }
     
