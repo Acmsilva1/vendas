@@ -1,6 +1,5 @@
 📊 Dashboard Financeiro Inteligente: Gestão IA & Dados
 Este projeto implementa uma pipeline de dados ponta a ponta (End-to-End), transformando registros brutos de operações diárias em um dashboard analítico de alta performance. A solução foca na visibilidade do lucro real e na automação do ciclo de vida dos dados financeiros.
-+2
 
 🏗️ Arquitetura da Pipeline
 O sistema foi desenhado seguindo princípios de engenharia de dados moderna, dividido em camadas principais:
@@ -12,7 +11,6 @@ Camada de Processamento (ETL): Engine em Python (FastAPI) que realiza a limpeza 
 
 
 Camada de Armazenamento & Backup: Automação via GitHub Actions que realiza o snapshot mensal dos dados operacionais para o "Histórico de Vendas" e sincroniza com banco de dados Supabase.
-+1
 
 Camada de Entrega: Frontend responsivo que consome uma API otimizada com cache inteligente para garantir carregamento instantâneo.
 
@@ -25,11 +23,9 @@ Web Framework: FastAPI, Jinja2, Uvicorn.
 
 
 Infraestrutura: Render (Hospedagem), GitHub Actions (Automação de Backup).
-+1
 
 
 Bancos de Dados: Google Sheets API e Supabase (PostgreSQL).
-+1
 
 🛡️ Governança e Melhores Práticas
 Este projeto aplica normas de governança e segurança de dados essenciais para ambientes corporativos:
